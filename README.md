@@ -31,12 +31,13 @@ Discord Bot for GNOME Nepal Discord Server.
 3. Create a `config.json` file in the project root and add the following keys:
    ```json
    {
-       "CLIENT_ID": "your-client-id",
-       "TOKEN": "your-bot-token",
-       "GUILD_ID": "your-guild-id"
+    "CLIENT_ID": "your-client-id",
+    "TOKEN": "your-bot-token",
+    "GUILD_ID": "your-guild-id",
+    "MOD_ROLE_ID": "your-mod-role-id"
    }
    ```
-   Replace `your-client-id`, `your-bot-token`, and `your-guild-id` with the respective values from the Discord Developer Portal.
+   Replace `your-client-id`, `your-bot-token`, ` your-mod-role-id` and `your-guild-id` with the respective values from the Discord Developer Portal & Server.
 
 ---
 
@@ -50,35 +51,36 @@ If successful, you will see the following logs:
 - `Registering slash commands...`
 - `Slash commands registered successfully!`
 - `Logged in as <Your Bot's Username>`
-
----
-
-### 4. Using the Slash Command
-1. In your Discord server, type `/hello-world` in any channel where the bot has access.
-2. The bot will reply with:
-   ```
-   Hello World!!
-   ```
-
+-----
+### 4. Using the Commands
+In your Discord server, type ```/help``` to see the list of available slash commands.
+Use ```$sudo help``` to see the list of available prefix commands.
 ---
 
 ## Project Structure
+
 - `index.js`: Main script for the bot's functionality.
 - `config.json`: Configuration file for sensitive credentials.
+- `Src/General/userhelp.js`: Contains the prefix help command.
+- `Src/Slash-Commands/help.js`: Contains the slash help command.
+- `Src/Moderation/purge.js`: Contains the purge command.
 
 ---
 
 ## Dependencies
 - [discord.js](https://www.npmjs.com/package/discord.js)
+- [@discordjs/builders](https://www.npmjs.com/package/@discordjs/builders)
 
 Install dependencies using:
 ```bash
 npm install discord.js
+npm install discord.js @discordjs/builders
 ```
 
 ---
 
 ## Contributing
 Contributions are welcome! Feel free to fork the project and submit a pull request.
+This update includes the latest commands and project structure.
 
 ---
