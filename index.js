@@ -1,59 +1,51 @@
-// index.js
-const { Client, GatewayIntentBits, Collection, ActivityType } = require('discord.js');
-const { CLIENT_ID, TOKEN, GUILD_IDS } = require('./config.json');
+const { Client, GatewayIntentBits, Collection, REST, Routes, ActivityType } = require('discord.js');
+const { CLIENT_ID, TOKEN, GUILD_IDS, MOD_ROLE_ID, MEMBER_ROLE_ID, PREFIX } = require('./config.json');
 const fs = require('fs');
 const path = require('path');
-const http = require('http');
+const activities = require('./activities'); // Import activities
 
 // Client Initialization
-const client = new Client({ intents: [GatewayIntentBits.GuildMessages] });
+const client = new Client({
+    intents: [
+        GatewayIntentBits.Guilds,
+        GatewayIntentBits.GuildMessages,
+        GatewayIntentBits.MessageContent,
+        GatewayIntentBits.GuildMembers
+    ]
+});
 client.commands = new Collection();
+client.slashCommands = new Collection();
 
-// File and Server Configuration
-const WEBSITE_PORT = 3000;
-const HTML_FILE_PATH = path.join(__dirname, 'index.html');
-const COMMANDS_DIR = path.join(__dirname, 'slash Commands');
-
-// Create the commands directory if it does not exist
-if (!fs.existsSync(COMMANDS_DIR)) {
-    fs.mkdirSync(COMMANDS_DIR);
-}
-
-// Create a basic web server to serve the HTML file
-const startWebServer = () => {
-    const server = http.createServer((req, res) => {
-        res.writeHead(200, { 'Content-Type': 'text/html' });
-        fs.readFile(HTML_FILE_PATH, (err, data) => {
-            if (err) {
-                res.writeHead(500);
-                res.end('Error loading the HTML file');
+// Load commands from the commands directory
+const COMMANDS_DIR = path.join(__dirname, 'Src');
+const loadCommands = (dir) => {
+    const files = fs.readdirSync(dir);
+    for (const file of files) {
+        const filePath = path.join(dir, file);
+        if (fs.statSync(filePath).isDirectory()) {
+            loadCommands(filePath);
+        } else if (file.endsWith('.js')) {
+            const command = require(filePath);
+            if (command.data) {
+                client.slashCommands.set(command.data.name, command);
+                console.log(`Loaded slash command: ${command.data.name}`);
+            } else if (command.name) {
+                client.commands.set(command.name, command);
+                console.log(`Loaded command: ${command.name}`);
             } else {
-                res.end(data);
+                console.error(`Command file ${filePath} is missing required properties.`);
             }
-        });
-    });
-
-    server.listen(WEBSITE_PORT, () => {
-        console.log(`Website running at http://localhost:${WEBSITE_PORT}`);
-    });
+        }
+    }
 };
+loadCommands(COMMANDS_DIR);
 
-// Load and register bot commands
-const commandFiles = fs.readdirSync(COMMANDS_DIR).filter(file => file.endsWith('.js'));
-for (const file of commandFiles) {
-    const command = require(path.join(COMMANDS_DIR, file));
-    client.commands.set(command.data.name, command);
-    console.log(`Loaded command: ${command.data.name}`);
-}
-
-// Function to register commands
+// Register slash commands with Discord
 const registerCommands = async () => {
-    const { REST, Routes } = require('discord.js');
     const rest = new REST({ version: '10' }).setToken(TOKEN);
-
     try {
         console.log('Registering slash commands...');
-        const commands = client.commands.map(cmd => cmd.data.toJSON());
+        const commands = client.slashCommands.map(cmd => cmd.data.toJSON());
         for (const guildId of GUILD_IDS) {
             await rest.put(Routes.applicationGuildCommands(CLIENT_ID, guildId), { body: commands });
             console.log(`Registered commands for guild: ${guildId}`);
@@ -68,7 +60,7 @@ const registerCommands = async () => {
 client.on('interactionCreate', async interaction => {
     if (!interaction.isCommand()) return;
 
-    const command = client.commands.get(interaction.commandName);
+    const command = client.slashCommands.get(interaction.commandName);
     if (!command) return;
 
     try {
@@ -79,26 +71,44 @@ client.on('interactionCreate', async interaction => {
     }
 });
 
-// Execution
-(async () => {
-    startWebServer();
-    await registerCommands();
-})();
+// Handle message commands
+client.on('messageCreate', async message => {
+    if (!message.content.startsWith(PREFIX) || message.author.bot) return;
 
-client.once('ready', () => {
-    console.log(`Logged in as ${client.user.tag}`);
+    const args = message.content.slice(PREFIX.length).trim().split(/ +/);
+    const commandName = args.shift().toLowerCase();
 
-    const activities = [
-        { name: 'Running the GNOME Nepal website', type: ActivityType.Playing },
-        { name: 'Watching members', type: ActivityType.Watching },
-        { name: 'Watching GitHub pull requests', type: ActivityType.Watching }
-    ];
+    const command = client.commands.get(commandName);
+    if (!command) return;
 
-    let currentActivity = 0;
-    setInterval(() => {
-        client.user.setActivity(activities[currentActivity]);
-        currentActivity = (currentActivity + 1) % activities.length;
-    }, 5 * 60 * 1000); // Rotate every 5 minutes
+    try {
+        await command.execute(message, args);
+    } catch (error) {
+        console.error(error);
+        await message.reply('There was an error executing that command!');
+    }
 });
 
-client.login(TOKEN);
+// Set bot activities
+client.on('ready', () => {
+    console.log(`Logged in as ${client.user.tag}!`);
+    let i = 0;
+    setInterval(() => {
+        const activity = activities[i];
+        client.user.setActivity(activity.name, { type: ActivityType[activity.type] });
+        i = (i + 1) % activities.length;
+    }, 30000); // Change activity every 30 seconds
+});
+
+// Execution
+(async () => {
+    await registerCommands();
+    try {
+        await client.login(TOKEN);
+    } catch (error) {
+        console.error('Error logging in:', error);
+    }
+})();
+
+// Export client for testing purposes
+module.exports = { client };

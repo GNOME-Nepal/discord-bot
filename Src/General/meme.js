@@ -1,0 +1,1 @@
+// meme command goes here which will fetch the meme from the meme API and send it to the channel.
