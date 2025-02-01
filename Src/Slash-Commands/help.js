@@ -18,11 +18,7 @@ module.exports = {
             .setColor(0x00ae86)
             .setTitle('Help - Command List')
             .setDescription('Below is a list of available commands:')
-            .addFields(
-                COMMANDS.map(cmd => (
-                    { name: `/${cmd.name}`, value: cmd.description, inline: false }
-                ))
-            )
+            .addFields(COMMANDS.map(cmd => ({ name: `/${cmd.name}`, value: cmd.description })))
             .setFooter({ text: 'These are Slash Commands. Use "$sudo help" for Prefix Commands' });
 
         await interaction.reply({ embeds: [embed] });

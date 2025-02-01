@@ -1,26 +1,25 @@
-// Src/Moderation/purge.js
-const { MOD_ROLE_ID } = require('../../config.json');
+const config = require('../../config-global');
 
 module.exports = {
     name: 'purge',
-    description: 'Delete a specified number of messages from a channel',
+    description: 'Deletes a specified number of messages from a channel.',
     async execute(message, args) {
-        if (!message.member.roles.cache.has(MOD_ROLE_ID)) {
-            return message.reply('You do not have permission to use this command.');
-        }
+        if (!message.content.startsWith(config.prefix) || message.author.bot) return;
+
+        const commandName = message.content.slice(config.prefix.length).trim().split(/\s+/)[0].toLowerCase();
+        if (commandName !== this.name) return;
 
         const amount = parseInt(args[0]);
-
-        if (isNaN(amount) || amount < 1 || amount > 100) {
-            return message.reply('Please provide a number between 1 and 100 for the number of messages to delete.');
+        if (isNaN(amount) || amount <= 0) {
+            return message.reply('Please provide a valid number of messages to delete.');
         }
 
         try {
             await message.channel.bulkDelete(amount, true);
             message.channel.send(`Successfully deleted ${amount} messages.`);
         } catch (error) {
-            console.error(error);
-            message.reply('There was an error trying to purge messages in this channel.');
+            console.error('Error deleting messages:', error);
+            message.channel.send('There was an error trying to delete messages in this channel.');
         }
-    }
+    },
 };

@@ -1,10 +1,10 @@
 const { Client, GatewayIntentBits, Collection, REST, Routes, ActivityType } = require('discord.js');
-const { CLIENT_ID, TOKEN, GUILD_IDS, MOD_ROLE_ID, MEMBER_ROLE_ID, PREFIX } = require('./config.json');
+const { CLIENT_ID, TOKEN, PREFIX, GUILD_ID } = require('./config-global');
+const { ACTIVITY_ROTATION_INTERVAL } = require('./constants');
 const fs = require('fs');
 const path = require('path');
-const activities = require('./activities'); // Import activities
+const activities = require('./activities');
 
-// Client Initialization
 const client = new Client({
     intents: [
         GatewayIntentBits.Guilds,
@@ -16,11 +16,8 @@ const client = new Client({
 client.commands = new Collection();
 client.slashCommands = new Collection();
 
-// Load commands from the commands directory
-const COMMANDS_DIR = path.join(__dirname, 'Src');
 const loadCommands = (dir) => {
-    const files = fs.readdirSync(dir);
-    for (const file of files) {
+    fs.readdirSync(dir).forEach(file => {
         const filePath = path.join(dir, file);
         if (fs.statSync(filePath).isDirectory()) {
             loadCommands(filePath);
@@ -36,17 +33,16 @@ const loadCommands = (dir) => {
                 console.error(`Command file ${filePath} is missing required properties.`);
             }
         }
-    }
+    });
 };
-loadCommands(COMMANDS_DIR);
+loadCommands(path.join(__dirname, 'Src'));
 
-// Register slash commands with Discord
 const registerCommands = async () => {
     const rest = new REST({ version: '10' }).setToken(TOKEN);
     try {
         console.log('Registering slash commands...');
         const commands = client.slashCommands.map(cmd => cmd.data.toJSON());
-        for (const guildId of GUILD_IDS) {
+        for (const guildId of GUILD_ID) {
             await rest.put(Routes.applicationGuildCommands(CLIENT_ID, guildId), { body: commands });
             console.log(`Registered commands for guild: ${guildId}`);
         }
@@ -56,7 +52,6 @@ const registerCommands = async () => {
     }
 };
 
-// Handle interactions
 client.on('interactionCreate', async interaction => {
     if (!interaction.isCommand()) return;
 
@@ -67,15 +62,19 @@ client.on('interactionCreate', async interaction => {
         await command.execute(interaction);
     } catch (error) {
         console.error(error);
-        await interaction.reply({ content: 'There was an error while executing this command!', ephemeral: true });
+        const replyContent = { content: 'There was an error while executing this command!', ephemeral: true };
+        if (interaction.deferred || interaction.replied) {
+            await interaction.followUp(replyContent);
+        } else {
+            await interaction.reply(replyContent);
+        }
     }
 });
 
-// Handle message commands
 client.on('messageCreate', async message => {
     if (!message.content.startsWith(PREFIX) || message.author.bot) return;
 
-    const args = message.content.slice(PREFIX.length).trim().split(/ +/);
+    const args = message.content.slice(PREFIX.length).trim().split(/\s+/);
     const commandName = args.shift().toLowerCase();
 
     const command = client.commands.get(commandName);
@@ -89,18 +88,21 @@ client.on('messageCreate', async message => {
     }
 });
 
-// Set bot activities
 client.on('ready', () => {
     console.log(`Logged in as ${client.user.tag}!`);
+    if (activities.length === 0) {
+        console.error('No activities found in activities.js. Please add at least one activity.');
+        return;
+    }
+
     let i = 0;
     setInterval(() => {
         const activity = activities[i];
         client.user.setActivity(activity.name, { type: ActivityType[activity.type] });
         i = (i + 1) % activities.length;
-    }, 30000); // Change activity every 30 seconds
+    }, ACTIVITY_ROTATION_INTERVAL);
 });
 
-// Execution
 (async () => {
     await registerCommands();
     try {
@@ -109,6 +111,3 @@ client.on('ready', () => {
         console.error('Error logging in:', error);
     }
 })();
-
-// Export client for testing purposes
-module.exports = { client };

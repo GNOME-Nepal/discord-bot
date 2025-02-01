@@ -13,11 +13,7 @@ module.exports = {
             .setColor(0x00ae86)
             .setTitle('Help - Prefix Command List')
             .setDescription('Below is a list of available prefix commands:')
-            .addFields(
-                PREFIX_COMMANDS.map(cmd => (
-                    { name: cmd.name, value: cmd.description, inline: false }
-                ))
-            )
+            .addFields(PREFIX_COMMANDS.map(cmd => ({ name: cmd.name, value: cmd.description })))
             .setFooter({ text: 'These are Prefix Commands. Use "/help" for Slash Commands' });
 
         message.channel.send({ embeds: [embed] });

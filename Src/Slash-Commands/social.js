@@ -1,47 +1,22 @@
-// commands/social.js
-const { SlashCommandBuilder } = require('@discordjs/builders');
-const { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
+const { SlashCommandBuilder, EmbedBuilder } = require('discord.js');
+const { EMBED_COLORS } = require('../../constants');
 
 module.exports = {
     data: new SlashCommandBuilder()
         .setName('social')
-        .setDescription('Provides links to our social media accounts.'),
+        .setDescription('Provides social media links for the organization.'),
     async execute(interaction) {
         const embed = new EmbedBuilder()
-            .setColor(0x00ae86)
-            .setTitle('Social Media Links')
-            .setDescription('Follow us on our social media accounts:')
+            .setColor(EMBED_COLORS.DEFAULT)
+            .setTitle('Follow Us on Social Media')
+            .setDescription('Stay connected with us through our social media channels.')
             .addFields(
-                { name: 'Facebook', value: '@gnomenepal', inline: true },
-                { name: 'Instagram', value: '@gnomenepal', inline: true },
-                { name: 'LinkedIn', value: '@gnomenepal', inline: true }
+                { name: 'Twitter', value: 'https://twitter.com/gnome_nepal', inline: true },
+                { name: 'Facebook', value: 'https://facebook.com/gnome.nepal', inline: true },
+                { name: 'Instagram', value: 'https://instagram.com/gnome_nepal', inline: true }
             )
-            .setFooter({ text: 'Stay connected with us!' });
+            .setFooter({ text: 'Thank you for your support!' });
 
-        const row = new ActionRowBuilder()
-            .addComponents(
-                new ButtonBuilder()
-                    .setLabel('Website')
-                    .setStyle(ButtonStyle.Link) // Link button for URL
-                    .setURL('https://nepal.gnome.org/')
-                    .setEmoji('🌐'), // Add emoji to represent the website
-                new ButtonBuilder()
-                    .setLabel('Facebook')
-                    .setStyle(ButtonStyle.Link) // Link button for URL
-                    .setURL('https://m.facebook.com/61560797123131/')
-                    .setEmoji('📘'), // Add emoji to represent Facebook
-                new ButtonBuilder()
-                    .setLabel('Instagram')
-                    .setStyle(ButtonStyle.Link) // Link button for URL
-                    .setURL('https://www.instagram.com/gnomenepal/')
-                    .setEmoji('📸'), // Add emoji to represent Instagram
-                new ButtonBuilder()
-                    .setLabel('LinkedIn')
-                    .setStyle(ButtonStyle.Link) // Link button for URL
-                    .setURL('https://www.linkedin.com/company/gnomenepal/posts/?feedView=all')
-                    .setEmoji('🔗') // Add emoji to represent LinkedIn
-            );
-
-        await interaction.reply({ embeds: [embed], components: [row] });
+        await interaction.reply({ embeds: [embed] });
     },
 };
