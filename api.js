@@ -8,14 +8,12 @@ const githubApi = createApiInstance('https://api.github.com', {
     'User-Agent': 'Discord-Bot'
 });
 
-const memeApi = createApiInstance(MEME_API_URL, {
-    'x-api-key': MEME_API_KEY
-});
+const memeApi = createApiInstance(`${MEME_API_URL}?api-key=${MEME_API_KEY}`, {});
 
 const endpoints = {
     GITHUB_ORG: (org) => `/orgs/${org}`,
     GITHUB_REPO_CONTRIBUTORS: (owner, repo) => `/repos/${owner}/${repo}/contributors`,
-    RANDOM_MEME: '/retrieve-random-meme'
+    RANDOM_MEME: ''
 };
 
 module.exports = {

@@ -26,7 +26,7 @@ const checkReportWebhookUrl = async () => {
 const runTests = async () => {
     await checkToken('https://api.github.com/user', config.GITHUB_TOKEN, 'Bearer');
     await checkToken('https://discord.com/api/v10/users/@me', config.TOKEN, 'Bot');
-    await checkToken(config.MEME_API_URL, config.MEME_API_KEY, 'Bearer');
+    await checkToken(`${config.MEME_API_URL}?api-key=${config.MEME_API_KEY}`, '', '');
     await checkReportWebhookUrl();
 };
 
