@@ -1,29 +1,58 @@
-const { EmbedBuilder } = require('discord.js');
 const { memeApi, endpoints } = require('../../api');
-const config = require('../../config-global');
 
-module.exports = {
-    name: 'meme',
-    description: 'Sends a random meme from the internet.',
-    async execute(message) {
-        if (!message.content.startsWith(config.prefix) || message.author.bot) return;
+            module.exports = {
+                name: 'meme',
+                description: 'Fetches a random meme',
+                async execute(message) {
+                    try {
+                        console.log(`Making request to ${endpoints.RANDOM_MEME}`);
 
-        const commandName = message.content.slice(config.prefix.length).trim().split(/\s+/)[0].toLowerCase();
-        if (commandName !== this.name) return;
+                        const response = await memeApi.get(endpoints.RANDOM_MEME);
 
-        try {
-            const { data: meme, headers } = await memeApi.get(endpoints.RANDOM_MEME);
+                        // Log quota information
+                        const quotaUsed = response.headers['x-api-quota-used'];
+                        const quotaLeft = response.headers['x-api-quota-left'];
+                        console.log(`Quota Used: ${quotaUsed}, Quota Left: ${quotaLeft}`);
 
-            const embed = new EmbedBuilder()
-                .setColor(0x00AE86)
-                .setTitle(meme.title || 'Random Meme')
-                .setImage(meme.url || meme.image)
-                .setFooter({ text: `Powered by apileague.com | Responses left today: ${headers['x-api-quota-left'] || 'Unknown'}` });
+                        // Validate response
+                        if (!response.data || !response.data.url) {
+                            console.error('Invalid API response: Missing meme URL');
+                            await message.reply({ content: 'There was an error while fetching the meme!', flags: 64 });
+                            return;
+                        }
 
-            message.channel.send({ embeds: [embed] });
-        } catch (error) {
-            console.error('Error fetching meme:', error);
-            message.channel.send('There was an error fetching a meme. Please try again later.');
-        }
-    },
-};
+                        // Extract meme details
+                        const memeUrl = response.data.url;
+                        const memeDescription = response.data.description || 'Enjoy this meme!';
+
+                        // Create an embed
+                        const embed = {
+                            title: 'Random Meme',
+                            description: memeDescription,
+                            image: { url: memeUrl },
+                            color: 16744192
+                        };
+
+                        // Reply with the embed
+                        await message.reply({ embeds: [embed] });
+                    } catch (error) {
+                        console.error('Error fetching meme:', error);
+
+                        if (error.response) {
+                            const { status } = error.response;
+
+                            if (status === 401) {
+                                await message.reply({ content: 'Invalid API key. Please check your configuration.', flags: 64 });
+                            } else if (status === 404) {
+                                await message.reply({ content: 'Meme not found. Please try again later.', flags: 64 });
+                            } else if (status === 429) {
+                                await message.reply({ content: 'API quota exceeded. Please try again tomorrow.', flags: 64 });
+                            } else {
+                                await message.reply({ content: 'There was an error while fetching the meme!', flags: 64 });
+                            }
+                        } else {
+                            await message.reply({ content: 'An unexpected error occurred. Please try again later.', flags: 64 });
+                        }
+                    }
+                }
+            };
