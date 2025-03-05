@@ -1,113 +1,229 @@
+/**
+ * GNOME Nepal Discord Bot - Core File
+ * ==================================
+ * DO NOT MODIFY WITHOUT MAINTAINER APPROVAL
+ *
+ * This file implements the core bot infrastructure including:
+ * - Dynamic command loading from file structure (for maintainability)
+ * - Dual command support (prefix and slash commands for flexibility)
+ * - Guild-specific command registration (for permission management)
+ * - Detailed console reporting (for monitoring and debugging)
+ * - Activity rotation (for user engagement)
+ *
+ * WARNING: This is a critical system file. Any modifications without explicit
+ * approval from project maintainers may break functionality or cause security issues.
+ * Please open an issue or pull request instead of directly editing this file.
+ */
 const { Client, GatewayIntentBits, Collection, REST, Routes, ActivityType } = require('discord.js');
-const { CLIENT_ID, TOKEN, PREFIX, GUILD_ID } = require('./config-global');
-const { ACTIVITY_ROTATION_INTERVAL } = require('./constants');
-const fs = require('fs');
-const path = require('path');
-const activities = require('./activities');
+        const { CLIENT_ID, TOKEN, PREFIX, GUILD_ID } = require('./config-global');
+        const { ACTIVITY_ROTATION_INTERVAL } = require('./constants');
+        const fs = require('fs').promises;
+        const path = require('path');
+        const activities = require('./activities');
+        const Table = require('cli-table3');
 
-const client = new Client({
-    intents: [
-        GatewayIntentBits.Guilds,
-        GatewayIntentBits.GuildMessages,
-        GatewayIntentBits.MessageContent,
-        GatewayIntentBits.GuildMembers
-    ]
-});
-client.commands = new Collection();
-client.slashCommands = new Collection();
+        const client = new Client({
+            intents: [
+                GatewayIntentBits.Guilds,
+                GatewayIntentBits.GuildMessages,
+                GatewayIntentBits.MessageContent,
+                GatewayIntentBits.GuildMembers
+            ]
+        });
 
-const loadCommands = (dir) => {
-    fs.readdirSync(dir).forEach(file => {
-        const filePath = path.join(dir, file);
-        if (fs.statSync(filePath).isDirectory()) {
-            loadCommands(filePath);
-        } else if (file.endsWith('.js')) {
-            const command = require(filePath);
-            if (command.data) {
-                client.slashCommands.set(command.data.name, command);
-                console.log(`Loaded slash command: ${command.data.name}`);
-            } else if (command.name) {
-                client.commands.set(command.name, command);
-                console.log(`Loaded command: ${command.name}`);
-            } else {
-                console.error(`Command file ${filePath} is missing required properties.`);
+        // Prevent EventEmitter memory leaks in larger servers
+        client.setMaxListeners(25);
+        client.once('ready', () => client.ws.setMaxListeners(25));
+
+        client.commands = new Collection();
+        client.slashCommands = new Collection();
+
+        const allCommands = [];
+        const registeredGuilds = [];
+
+        // Load commands from predefined categories
+        const loadCommands = async () => {
+            const categories = ['General', 'System-Admin', 'Moderation'];
+
+            for (const category of categories) {
+                const categoryPath = path.join(__dirname, 'Src', category);
+
+                let files;
+                try {
+                    files = await fs.readdir(categoryPath);
+                } catch (err) {
+                    // Just skip missing directories
+                    continue;
+                }
+
+                for (const file of files) {
+                    if (!file.endsWith('.js')) continue;
+
+                    // If one command fails, log error but continue loading others
+                    try {
+                        const command = require(path.join(categoryPath, file));
+
+                        if (command.data) {
+                            client.slashCommands.set(command.data.name, command);
+                            allCommands.push({
+                                name: command.data.name,
+                                type: 'Slash',
+                                description: command.data.description || 'No description',
+                                status: '✓'
+                            });
+                        } else if (command.name) {
+                            client.commands.set(command.name, command);
+                            allCommands.push({
+                                name: command.name,
+                                type: 'Regular',
+                                description: command.description || 'No description',
+                                status: '✓'
+                            });
+                        } else {
+                            console.log(`Skipping ${file}: missing required properties`);
+                        }
+                    } catch (err) {
+                        console.log(`Failed to load ${file}: ${err.message}`);
+                    }
+                }
             }
-        }
-    });
-};
-loadCommands(path.join(__dirname, 'Src'));
+        };
 
-const registerCommands = async () => {
-    const rest = new REST({ version: '10' }).setToken(TOKEN);
-    try {
-        console.log('Registering slash commands...');
-        const commands = client.slashCommands.map(cmd => cmd.data.toJSON());
-        for (const guildId of GUILD_ID) {
-            await rest.put(Routes.applicationGuildCommands(CLIENT_ID, guildId), { body: commands });
-            console.log(`Registered commands for guild: ${guildId}`);
-        }
-        console.log('Slash commands registered successfully!');
-    } catch (error) {
-        console.error('Error registering slash commands:', error);
-    }
-};
+        // Register commands to guilds
+        const registerCommands = async () => {
+            const rest = new REST({ version: '10' }).setToken(TOKEN);
+            const commands = client.slashCommands.map(cmd => cmd.data.toJSON());
 
-client.on('interactionCreate', async interaction => {
-    if (!interaction.isCommand()) return;
+            // Critical operation - maintain full error handling
+            for (const guildId of GUILD_ID) {
+                try {
+                    await rest.put(
+                        Routes.applicationGuildCommands(CLIENT_ID, guildId),
+                        { body: commands }
+                    );
+                    registeredGuilds.push({ id: guildId, status: '✓' });
+                } catch (error) {
+                    console.error(`Failed to register commands in guild ${guildId}:`, error);
+                    registeredGuilds.push({ id: guildId, status: '✗' });
+                }
+            }
+        };
 
-    const command = client.slashCommands.get(interaction.commandName);
-    if (!command) return;
+        // Status display for console
+        const displayFinalTable = (botTag) => {
+            const commandTable = new Table({
+                head: ['Title / Name', 'Type', 'Description', 'Status'],
+                colWidths: [25, 15, 70, 9]
+            });
 
-    try {
-        await command.execute(interaction);
-    } catch (error) {
-        console.error(error);
-        const replyContent = { content: 'There was an error while executing this command!', ephemeral: true };
-        if (interaction.deferred || interaction.replied) {
-            await interaction.followUp(replyContent);
-        } else {
-            await interaction.reply(replyContent);
-        }
-    }
-});
+            allCommands.forEach(cmd => {
+                commandTable.push([cmd.name, cmd.type, cmd.description, cmd.status]);
+            });
 
-client.on('messageCreate', async message => {
-    if (!message.content.startsWith(PREFIX) || message.author.bot) return;
+            registeredGuilds.forEach(guild => {
+                const guildObj = client.guilds.cache.get(guild.id);
+                const memberCount = guildObj ? guildObj.memberCount : 'Unknown';
+                const guildName = guildObj ? guildObj.name : 'Unknown Guild';
+                const commandCount = client.slashCommands.size;
 
-    const args = message.content.slice(PREFIX.length).trim().split(/\s+/);
-    const commandName = args.shift().toLowerCase();
+                commandTable.push([
+                    `Guild: ${guild.id.substring(0, 11)}...`,
+                    'Registered',
+                    `${guildName} (${memberCount} members, ${commandCount} commands)`,
+                    guild.status
+                ]);
+            });
 
-    const command = client.commands.get(commandName);
-    if (!command) return;
+            const totalUsers = client.guilds.cache.reduce((acc, guild) => acc + guild.memberCount, 0);
+            const guildCount = client.guilds.cache.size;
 
-    try {
-        await command.execute(message, args);
-    } catch (error) {
-        console.error(error);
-        await message.reply('There was an error executing that command!');
-    }
-});
+            commandTable.push([
+                'Server Stats',
+                'Info',
+                `${guildCount} servers with ${totalUsers} total members`,
+                '✓'
+            ]);
+            commandTable.push([
+                `Bot: ${botTag}`,
+                'Logged in',
+                `${client.slashCommands.size} commands available`,
+                '✓'
+            ]);
 
-client.on('ready', () => {
-    console.log(`Logged in as ${client.user.tag}!`);
-    if (activities.length === 0) {
-        console.error('No activities found in activities.js. Please add at least one activity.');
-        return;
-    }
+            console.log('\n=== GNOME Nepal Discord Bot Status ===');
+            console.log(commandTable.toString());
+            console.log('Bot is ready to use! ✓ | LGTM 🚀 ');
+        };
 
-    let i = 0;
-    setInterval(() => {
-        const activity = activities[i];
-        client.user.setActivity(activity.name, { type: ActivityType[activity.type] });
-        i = (i + 1) % activities.length;
-    }, ACTIVITY_ROTATION_INTERVAL);
-});
+        // Critical user-facing function - maintain full error handling
+        client.on('interactionCreate', async interaction => {
+            if (!interaction.isCommand()) return;
 
-(async () => {
-    await registerCommands();
-    try {
-        await client.login(TOKEN);
-    } catch (error) {
-        console.error('Error logging in:', error);
-    }
-})();
+            const command = client.slashCommands.get(interaction.commandName);
+            if (!command) return;
+
+            try {
+                await command.execute(interaction);
+            } catch (error) {
+                console.error(`Command error /${interaction.commandName}:`, error);
+
+                // Ephemeral error message
+                const replyContent = {
+                    content: 'There was an error while executing this command!',
+                    flags: 64
+                };
+
+                if (interaction.deferred || interaction.replied) {
+                    await interaction.followUp(replyContent).catch(() => {});
+                } else {
+                    await interaction.reply(replyContent).catch(() => {});
+                }
+            }
+        });
+
+        // Handle prefix commands
+        client.on('messageCreate', async message => {
+            if (!message.content.startsWith(PREFIX) || message.author.bot) return;
+
+            const args = message.content.slice(PREFIX.length).trim().split(/\s+/);
+            const commandName = args.shift().toLowerCase();
+            const command = client.commands.get(commandName);
+            if (!command) return;
+
+            try {
+                await command.execute(message, args);
+            } catch (error) {
+                console.error(`Command error ${commandName}:`, error);
+                message.reply('There was an error executing that command!').catch(() => {});
+            }
+        });
+
+        // Set up activities
+        client.on('ready', () => {
+            displayFinalTable(client.user.tag);
+
+            if (activities.length) {
+                let currentActivityIndex = 0;
+                const interval = setInterval(() => {
+                    const activity = activities[currentActivityIndex];
+                    client.user.setActivity(activity.name, { type: ActivityType[activity.type] });
+                    currentActivityIndex = (currentActivityIndex + 1) % activities.length;
+                }, ACTIVITY_ROTATION_INTERVAL);
+
+                client.on('disconnect', () => clearInterval(interval));
+            }
+        });
+
+        // Main startup sequence
+        (async () => {
+            await loadCommands();
+            await registerCommands();
+
+            // Critical connection - maintain full error handling
+            try {
+                await client.login(TOKEN);
+            } catch (error) {
+                console.error("CRITICAL: Failed to connect to Discord:", error);
+                process.exit(1);
+            }
+        })();
