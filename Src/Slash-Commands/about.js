@@ -1,35 +1,106 @@
-const { SlashCommandBuilder, EmbedBuilder } = require('discord.js');
-const { githubApi, endpoints } = require('../../api');
+const { SlashCommandBuilder, ActionRowBuilder, StringSelectMenuBuilder, EmbedBuilder } = require('discord.js');
+                            const { fetchGnomeNepalData } = require('../../api.js');
+                            const { MESSAGE_COLLECTOR_TIMEOUT, EMBED_COLORS, remainingTime } = require('../../constants.js');
 
-module.exports = {
-    data: new SlashCommandBuilder()
-        .setName('about')
-        .setDescription('Provides information about the GNOME-Nepal organization.'),
-    async execute(interaction) {
-        await interaction.deferReply();
+                            module.exports = {
+                                data: new SlashCommandBuilder()
+                                    .setName('about')
+                                    .setDescription('Provides information about the GNOME-Nepal organization.'),
+                                async execute(interaction) {
+                                    await interaction.deferReply();
 
-        try {
-            const { data: orgData } = await githubApi.get(endpoints.GITHUB_ORG('GNOME-Nepal'));
+                                    try {
+                                        const { org, repos, contributors } = await fetchGnomeNepalData();
 
-            const embed = new EmbedBuilder()
-                .setColor(0x00AE86)
-                .setTitle('About GNOME-Nepal')
-                .setDescription(orgData.description || 'No description provided.')
-                .addFields(
-                    { name: 'Public Repos', value: `${orgData.public_repos}`, inline: true },
-                    { name: 'Followers', value: `${orgData.followers}`, inline: true },
-                    { name: 'Location', value: orgData.location || 'N/A', inline: true },
-                    { name: 'Website', value: orgData.blog || 'N/A', inline: true },
-                    { name: 'Twitter', value: orgData.twitter_username || 'N/A', inline: true },
-                    { name: 'GitHub URL', value: orgData.html_url }
-                )
-                .setThumbnail(orgData.avatar_url)
-                .setFooter({ text: 'Data fetched from GitHub API' });
+                                        const options = repos.map(repo => ({
+                                            label: repo.name,
+                                            description: repo.description ? repo.description.substring(0, 97) + '...' : 'No description',
+                                            value: repo.name,
+                                        }));
 
-            await interaction.editReply({ embeds: [embed] });
-        } catch (error) {
-            console.error('Error fetching GitHub data:', error);
-            await interaction.editReply('There was an error fetching the organization data.');
-        }
-    },
-};
+                                        const orgEmbed = new EmbedBuilder()
+                                            .setColor(EMBED_COLORS.DEFAULT)
+                                            .setTitle('About.us GNOME Nepal')
+                                            .setThumbnail(org.avatar_url)
+                                            .addFields(
+                                                { name: 'Name', value: org.name || 'N/A', inline: true },
+                                                { name: 'Description', value: org.description || 'No description provided', inline: true },
+                                                { name: 'Public Repositories', value: `${org.public_repos}`, inline: true },
+                                                { name: 'Followers', value: `${org.followers}`, inline: true },
+                                                { name: 'Website', value: org.blog || 'Not provided', inline: true },
+                                                { name: 'GitHub URL', value: `[Visit Here](${org.html_url})`, inline: true },
+                                                { name: 'Contributors', value: `${contributors.length}`, inline: true },
+                                                { name: 'Code of Conduct', value: org.code_of_conduct ? `[View Here](${org.code_of_conduct.url})` : 'Not provided', inline: true },
+                                                { name: 'Social Media', value: org.twitter_username ? `[Twitter](https://twitter.com/${org.twitter_username})` : 'Not provided', inline: true },
+                                                { name: 'Email', value: org.email || 'Not provided', inline: true },
+                                              );
+
+                                        const row = new ActionRowBuilder()
+                                            .addComponents(
+                                                new StringSelectMenuBuilder()
+                                                    .setCustomId('select-repo')
+                                                    .setPlaceholder('Select a repository')
+                                                    .addOptions(options)
+                                            );
+
+                                        let remainingTimeLocal = remainingTime;
+                                        const message = await interaction.editReply({
+                                            content: `Time remaining: ${remainingTimeLocal} seconds`,
+                                            embeds: [orgEmbed],
+                                            components: [row]
+                                        });
+
+                                        const filter = i => i.customId === 'select-repo' && i.user.id === interaction.user.id;
+                                        const collector = interaction.channel.createMessageComponentCollector({ filter, time: MESSAGE_COLLECTOR_TIMEOUT });
+
+                                        const interval = setInterval(async () => {
+                                            remainingTimeLocal -= 1;
+                                            if (remainingTimeLocal <= 0) {
+                                                clearInterval(interval);
+                                            } else {
+                                                await message.edit({ content: `Time remaining: ${remainingTimeLocal} seconds` });
+                                            }
+                                        }, 1000);
+
+                                        collector.on('collect', async i => {
+                                            const selectedRepoName = i.values[0];
+                                            const selectedRepo = repos.find(repo => repo.name === selectedRepoName);
+
+                                            const repoEmbed = new EmbedBuilder()
+                                                .setColor(EMBED_COLORS.DEFAULT)
+                                                .setTitle(`Repository Information for ${selectedRepo.name}`)
+                                                .addFields(
+                                                    { name: 'Name', value: selectedRepo.name || 'N/A', inline: true },
+                                                    { name: 'Description', value: selectedRepo.description || 'No description provided', inline: true },
+                                                    { name: 'Stars', value: `${selectedRepo.stargazers_count}`, inline: true },
+                                                    { name: 'Forks', value: `${selectedRepo.forks_count}`, inline: true },
+                                                    { name: 'Open Issues', value: `${selectedRepo.open_issues_count}`, inline: true },
+                                                    { name: 'GitHub URL', value: `[Visit Here](${selectedRepo.html_url})`, inline: true }
+                                                );
+
+                                            await i.reply({ embeds: [repoEmbed], ephemeral: true });
+                                        });
+
+                                        collector.on('end', async () => {
+                                            clearInterval(interval);
+                                            const disabledRow = new ActionRowBuilder()
+                                                .addComponents(
+                                                    new StringSelectMenuBuilder()
+                                                        .setCustomId('select-repo')
+                                                        .setPlaceholder('Select a repository')
+                                                        .addOptions(options)
+                                                        .setDisabled(true)
+                                                );
+                                            await message.edit({ content: 'Time expired. Please use the command again to view repository details.', components: [disabledRow] });
+                                        });
+
+                                    } catch (error) {
+                                        console.error('Error fetching organization or repository info:', error.response ? error.response.data : error.message);
+                                        console.error('Full error response:', error.response ? error.response : error);
+                                        await interaction.editReply({
+                                            content: 'Unable to fetch organization or repository details. Please check if the organization is public or the GitHub token is valid.',
+                                            flags: 64
+                                        });
+                                    }
+                                },
+                            };
