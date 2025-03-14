@@ -6,7 +6,7 @@ const {
   Routes,
   ActivityType,
 } = require('discord.js')
-const { CLIENT_ID, TOKEN, PREFIX, GUILD_ID } = require('./config-global')
+const { CLIENT_ID, TOKEN, PREFIX, GUILD_IDS } = require('./config-global')
 const { ACTIVITY_ROTATION_INTERVAL } = require('./constants')
 const fs = require('fs')
 const path = require('path')
@@ -51,7 +51,7 @@ const registerCommands = async () => {
   try {
     console.log('Registering slash commands...')
     const commands = client.slashCommands.map((cmd) => cmd.data.toJSON())
-    for (const guildId of GUILD_ID) {
+    for (const guildId of GUILD_IDS) {
       await rest.put(Routes.applicationGuildCommands(CLIENT_ID, guildId), {
         body: commands,
       })
@@ -120,7 +120,6 @@ client.on('ready', () => {
     i = (i + 1) % activities.length
   }, ACTIVITY_ROTATION_INTERVAL)
 })
-
 ;(async () => {
   await registerCommands()
   try {
