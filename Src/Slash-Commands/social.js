@@ -1,5 +1,5 @@
-const { SlashCommandBuilder, EmbedBuilder } = require('discord.js')
-const { EMBED_COLORS } = require('../../constants')
+const { SlashCommandBuilder, EmbedBuilder } = require('discord.js');
+const { EMBED_COLORS } = require('../../constants');
 
 module.exports = {
   data: new SlashCommandBuilder()
@@ -29,8 +29,8 @@ module.exports = {
           inline: true,
         },
       )
-      .setFooter({ text: 'Thank you for your support!' })
+      .setFooter({ text: 'Thank you for your support!' });
 
-    await interaction.reply({ embeds: [embed] })
+    await interaction.reply({ embeds: [embed] });
   },
-}
+};

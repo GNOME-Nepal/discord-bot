@@ -8,4 +8,4 @@ module.exports = {
     ERROR: 0xff0000,
     WARNING: 0xffa500,
   },
-}
+};

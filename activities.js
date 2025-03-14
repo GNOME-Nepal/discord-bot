@@ -17,4 +17,4 @@ module.exports = [
   { name: 'Local Events and Workshops', type: 'WATCHING' },
   { name: 'GNOME Nepal', type: 'LISTENING' },
   { name: 'GNOME Nepal', type: 'PLAYING' },
-]
+];

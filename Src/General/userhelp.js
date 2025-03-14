@@ -1,4 +1,4 @@
-const { EmbedBuilder } = require('discord.js')
+const { EmbedBuilder } = require('discord.js');
 
 const PREFIX_COMMANDS = [
   {
@@ -10,7 +10,7 @@ const PREFIX_COMMANDS = [
     name: '$sudo purge <amount>',
     description: 'Delete a specified number of messages from a channel.',
   },
-]
+];
 
 module.exports = {
   name: 'help',
@@ -29,8 +29,8 @@ module.exports = {
       )
       .setFooter({
         text: 'These are Prefix Commands. Use "/help" for Slash Commands',
-      })
+      });
 
-    message.channel.send({ embeds: [embed] })
+    message.channel.send({ embeds: [embed] });
   },
-}
+};

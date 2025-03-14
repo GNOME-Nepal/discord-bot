@@ -1,5 +1,5 @@
-const { SlashCommandBuilder } = require('@discordjs/builders')
-const { EmbedBuilder } = require('discord.js')
+const { SlashCommandBuilder } = require('@discordjs/builders');
+const { EmbedBuilder } = require('discord.js');
 
 const COMMANDS = [
   {
@@ -21,7 +21,7 @@ const COMMANDS = [
     description:
       'Displays the list of contributors from the GNOME Nepal GitHub account.',
   },
-]
+];
 
 module.exports = {
   data: new SlashCommandBuilder()
@@ -42,8 +42,8 @@ module.exports = {
       )
       .setFooter({
         text: 'These are Slash Commands. Use "$sudo help" for Prefix Commands',
-      })
+      });
 
-    await interaction.reply({ embeds: [embed] })
+    await interaction.reply({ embeds: [embed] });
   },
-}
+};

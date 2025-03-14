@@ -1,4 +1,4 @@
-const { SlashCommandBuilder, EmbedBuilder } = require('discord.js')
+const { SlashCommandBuilder, EmbedBuilder } = require('discord.js');
 
 module.exports = {
   data: new SlashCommandBuilder()
@@ -31,8 +31,8 @@ module.exports = {
       )
       .setFooter({
         text: 'These are Admin Commands. Use "/help" for general commands.',
-      })
+      });
 
-    await interaction.reply({ embeds: [embed], ephemeral: true })
+    await interaction.reply({ embeds: [embed], ephemeral: true });
   },
-}
+};
