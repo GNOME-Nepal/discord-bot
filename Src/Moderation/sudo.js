@@ -72,7 +72,7 @@ module.exports = {
   async executeKick(message, args) {
     if (args.length < 1) {
       await message.reply(
-        'Please provide a member or member id to kick. Example: `?sudo kick <@member/member_id>`',
+        'Please provide a member or member id to kick. Example: `?sudo kick <@member/member_id> [reason]`',
       )
       return
     }
@@ -116,9 +116,106 @@ module.exports = {
   },
 
   // Muting == Timeout
-  async executeMute(message, args) {},
+  async executeMute(message, args) {
+    if (args.length < 1) {
+      await message.reply(
+        'Please provide a member or member id to mute. Example: `?sudo mute <@member/member_id> <duration> [reason]`',
+      )
+      return
+    }
+
+    let member = message.mentions.members.first()
+    if (!member) {
+      member = await message.guild.members.fetch(args[0])
+    }
+
+    if (!member) {
+      await message.reply('Invalid member.')
+      return
+    }
+
+    if (!member.kickable) {
+      await message.reply('Cannot mute this member.')
+      return
+    }
+
+    // Compare the executor's role with the target's role.
+    if (
+      message.member.roles.highest.position <= member.roles.highest.position
+    ) {
+      await message.reply('Cannot mute this member.')
+      return
+    }
+
+    let duration = args[1]
+    if (!duration) {
+      await message.reply('Please provide a duration.')
+      return
+    }
+
+    let durationMs = this.parseDuration(duration)
+
+    if (!durationMs) {
+      await message.reply('Invalid duration.')
+      return
+    }
+
+    let reason = args.slice(2).join(' ') || 'No reason provided.'
+
+    try {
+      await member.send(
+        `You have been muted in ${message.guild.name}.\n\nReason: ${reason}
+        Executor:${message.author.tag}
+        Duration: ${duration}`,
+      )
+
+      await message.reply(
+        `Successfully timed out ${member.user.tag} for ${duration}\`${durationMs} ms\``,
+      )
+    } catch (error) {
+      console.error('Error muting member:', error)
+      await message.reply('There was an error trying to mute this member.')
+    }
+  },
 
   async executeRoleAdd(message, args) {},
 
   async executeRoleRemove(message, args) {},
+
+  /**
+   * Given a duration string, parse it into a number of milliseconds.
+   * @param {string} durationStr
+   * @returns {number}
+   **/
+  parseDuration(durationStr) {
+    let duration = durationStr.toLowerCase()
+    let durationRegex = /(\d+)(s|m|h|d|w)/
+    let matches = duration.match(durationRegex)
+
+    if (!matches) return
+
+    let durationValue = parseInt(matches[1])
+    let durationType = matches[2]
+
+    switch (durationType) {
+      case 's': {
+        return durationValue * 1000
+      }
+      case 'm': {
+        return durationValue * 1000 * 60
+      }
+      case 'h': {
+        return durationValue * 1000 * 60 * 60
+      }
+      case 'd': {
+        return durationValue * 1000 * 60 * 60 * 24
+      }
+      case 'w': {
+        return durationValue * 1000 * 60 * 60 * 24 * 7
+      }
+      default: {
+        return
+      }
+    }
+  },
 }
