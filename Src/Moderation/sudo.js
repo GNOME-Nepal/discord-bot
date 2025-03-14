@@ -178,9 +178,111 @@ module.exports = {
     }
   },
 
-  async executeRoleAdd(message, args) {},
+  async executeRoleAdd(message, args) {
+    if (args.length < 2) {
+      await message.reply(
+        'Please provide a member or member id and a role or role id to add. Example: `?sudo role add <@member/member_id> <@role/role_id>`',
+      )
+      return
+    }
 
-  async executeRoleRemove(message, args) {},
+    let member = message.mentions.members.first()
+    if (!member) {
+      member = await message.guild.members.fetch(args[0])
+    }
+
+    if (!member) {
+      await message.reply('Invalid member.')
+      return
+    }
+
+    let role = message.mentions.roles.first()
+    if (!role) {
+      role = message.guild.roles.cache.get(args[1])
+    }
+
+    if (!role) {
+      await message.reply('Invalid role.')
+      return
+    }
+
+    if (member.roles.cache.has(role.id)) {
+      await message.reply('Member already has this role.')
+      return
+    }
+
+    // Compare if the executor's role is higher than the target's role.
+    if (
+      message.member.roles.highest.position <= role.position ||
+      message.member.roles.highest.position <= member.roles.highest.position
+    ) {
+      await message.reply('Cannot add this role.')
+      return
+    }
+
+    try {
+      await member.roles.add(role)
+      await message.reply(
+        `Successfully added ${role.name} to ${member.user.tag}.`,
+      )
+    } catch (error) {
+      console.error('Error adding role:', error)
+      await message.reply('There was an error trying to add this role.')
+    }
+  },
+
+  async executeRoleRemove(message, args) {
+    if (args.length < 2) {
+      await message.reply(
+        'Please provide a member or member id and a role or role id to remove. Example: `?sudo role remove <@member/member_id> <@role/role_id>`',
+      )
+      return
+    }
+
+    let member = message.mentions.members.first()
+    if (!member) {
+      member = await message.guild.members.fetch(args[0])
+    }
+
+    if (!member) {
+      await message.reply('Invalid member.')
+      return
+    }
+
+    let role = message.mentions.roles.first()
+    if (!role) {
+      role = message.guild.roles.cache.get(args[1])
+    }
+
+    if (!role) {
+      await message.reply('Invalid role.')
+      return
+    }
+
+    if (!member.roles.cache.has(role.id)) {
+      await message.reply('Member does not have this role.')
+      return
+    }
+
+    // Compare if the executor's role is higher than the target's role.
+    if (
+      message.member.roles.highest.position <= role.position ||
+      message.member.roles.highest.position <= member.roles.highest.position
+    ) {
+      await message.reply('Cannot remove this role.')
+      return
+    }
+
+    try {
+      await member.roles.remove(role)
+      await message.reply(
+        `Successfully removed ${role.name} from ${member.user.tag}.`,
+      )
+    } catch (error) {
+      console.error('Error removing role:', error)
+      await message.reply('There was an error trying to remove this role.')
+    }
+  },
 
   /**
    * Given a duration string, parse it into a number of milliseconds.
