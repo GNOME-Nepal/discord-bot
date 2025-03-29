@@ -1,59 +1,46 @@
 const { memeApi } = require('../../api.js');
-                                    const { EMBED_COLORS, RANDOM_MEME } = require('../../constants.js');
+const { EMBED_COLORS, RANDOM_MEME } = require('../../constants.js');
 
-                                    module.exports = {
-                                        name: 'meme',
-                                        description: 'Fetches a random meme',
-                                        async execute(message) {
-                                            try {
-                                                console.log(`Making request to ${RANDOM_MEME}`);
+module.exports = {
+    name: 'meme',
+    description: 'Fetches a random meme from Reddit',
+    async execute(message) {
+        try {
+            console.log(`Making request to ${RANDOM_MEME}`);
+            
+            const response = await memeApi.get('/gimme');
+            const data = response.data;
 
-                                                const response = await memeApi.get(RANDOM_MEME);
+            if (!data || !data.url) {
+                console.error('Invalid API response:', data);
+                await message.reply({ content: 'There was an error while fetching the meme!', flags: 64 });
+                return;
+            }
 
-                                                // Log quota information
-                                                const quotaUsed = response.headers['x-api-quota-used'];
-                                                const quotaLeft = response.headers['x-api-quota-left'];
-                                                console.log(`Quota Used: ${quotaUsed}, Quota Left: ${quotaLeft}`);
+            // Build embed with new data structure
+            const embed = {
+                title: data.title,
+                description: `From r/${data.subreddit}`,
+                image: { url: data.url },
+                color: EMBED_COLORS.DEFAULT,
+                footer: { text: `👍 ${data.ups} | Author: ${data.author}` }
+            };
 
-                                                // Validate response
-                                                if (!response.data || !response.data.url) {
-                                                    console.error('Invalid API response: Missing meme URL');
-                                                    await message.reply({ content: 'There was an error while fetching the meme!', flags: 64 });
-                                                    return;
-                                                }
+            await message.reply({ embeds: [embed] });
+        } catch (error) {
+            console.error('Error fetching meme:', error);
+            
+            let errorMessage = 'An unexpected error occurred. Please try again later.';
+            if (error.response) {
+                if (error.response.data?.message) {
+                    errorMessage = error.response.data.message;
+                }
+            }
 
-                                                // Extract meme details
-                                                const memeUrl = response.data.url;
-                                                const memeDescription = response.data.description || 'Enjoy this meme!';
-
-                                                // Create an embed
-                                                const embed = {
-                                                    title: 'Random Meme',
-                                                    description: memeDescription,
-                                                    image: { url: memeUrl },
-                                                    color: EMBED_COLORS.DEFAULT
-                                                };
-
-                                                // Reply with the embed
-                                                await message.reply({ embeds: [embed] });
-                                            } catch (error) {
-                                                console.error('Error fetching meme:', error);
-
-                                                if (error.response) {
-                                                    const { status } = error.response;
-
-                                                    if (status === 401) {
-                                                        await message.reply({ content: 'Invalid API key. Please check your configuration.', flags: 64 });
-                                                    } else if (status === 404) {
-                                                        await message.reply({ content: 'Meme not found. Please try again later.', flags: 64 });
-                                                    } else if (status === 429) {
-                                                        await message.reply({ content: 'API quota exceeded. Please try again tomorrow.', flags: 64 });
-                                                    } else {
-                                                        await message.reply({ content: 'There was an error while fetching the meme!', flags: 64 });
-                                                    }
-                                                } else {
-                                                    await message.reply({ content: 'An unexpected error occurred. Please try again later.', flags: 64 });
-                                                }
-                                            }
-                                        }
-                                    };
+            await message.reply({ 
+                content: `❌ Error: ${errorMessage}`,
+                flags: 64 
+            });
+        }
+    }
+};

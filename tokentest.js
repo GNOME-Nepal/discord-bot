@@ -7,7 +7,7 @@ const results = [];
 const checkToken = async (url, token, tokenType, serviceName) => {
     try {
         const response = await axios.get(url, {
-            headers: { 'Authorization': `${tokenType} ${token}` }
+            headers: {'Authorization': `${tokenType} ${token}`}
         });
         results.push({
             name: serviceName,
@@ -78,7 +78,6 @@ const displayResults = () => {
 const runTests = async () => {
     await checkToken('https://api.github.com/user', config.GITHUB_TOKEN, 'Bearer', 'GitHub API');
     await checkToken('https://discord.com/api/v10/users/@me', config.TOKEN, 'Bot', 'Discord Bot');
-    await checkToken(`${config.MEME_API_URL}?api-key=${config.MEME_API_KEY}`, '', '', 'Meme API');
     await checkReportWebhookUrl();
 
     displayResults();
