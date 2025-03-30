@@ -19,7 +19,7 @@ module.exports = {
             .setTitle('Help - Command List')
             .setDescription('Below is a list of available commands:')
             .addFields(COMMANDS.map(cmd => ({name: `/${cmd.name}`, value: cmd.description})))
-            .setFooter({text: 'These are Slash Commands. Use "$sudo help" for Prefix Commands'});
+            .setFooter({text: 'These are Slash Commands. Use "$sudo.js help" for Prefix Commands'});
 
         await interaction.reply({embeds: [embed]});
     },

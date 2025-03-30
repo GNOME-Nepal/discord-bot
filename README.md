@@ -71,7 +71,7 @@ Use ```$sudo help``` to see the list of available prefix commands.
 
 - `index.js`: Main script for the bot's functionality.
 - `config.json`: Configuration file for sensitive credentials.
-- `Src/General/userhelp.js`: Contains the prefix help command.
+- `Src/General/Sudo.js`: Contains the prefix help command.
 - `Src/Slash-Commands/help.js`: Contains the slash help command.
 - `Src/Moderation/purge.js`: Contains the purge command.
 

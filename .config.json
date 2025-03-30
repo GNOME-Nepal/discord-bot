@@ -7,8 +7,9 @@
   "MEME_API_KEY": "your-meme-api-key",
   "MEME_API_URL": "your-meme-api-url",
   "REPORT_WEBHOOK_URL": "your-report-webhook-url",
-  "MOD_ROLE_ID": "your-mod-role-id",
   "REPORT_LOG_CHANNEL_ID": "your-report-log-channel-id",
   "prefix": "your-prefix",
-  "Member": "your-member"
+  "Member": "your-member",
+  "MOD_ROLE": "your-mod-role",
+  "Contributor": "your-contributor-role"
 }
