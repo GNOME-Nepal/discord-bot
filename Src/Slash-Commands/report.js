@@ -10,6 +10,7 @@ const {
 } = require('discord.js');
 const {EMBED_COLORS} = require('../../constants');
 const config = require('../../config-global');
+const axios = require('axios');
 
 module.exports = {
     data: new SlashCommandBuilder()
@@ -47,266 +48,153 @@ module.exports = {
             .setPlaceholder("DD/MM/YYYY or approximate time");
 
         // Add action rows with text inputs to modal
-        modal.addComponents(
-            new ActionRowBuilder().addComponents(whatInput),
-            new ActionRowBuilder().addComponents(whyInput),
-            new ActionRowBuilder().addComponents(whenInput)
-        );
+        modal.addComponents(new ActionRowBuilder().addComponents(whatInput), new ActionRowBuilder().addComponents(whyInput), new ActionRowBuilder().addComponents(whenInput));
 
         // Show the modal
         await interaction.showModal(modal);
 
-        // Handle modal submission
         try {
-            const filter = (modalInteraction) =>
-                modalInteraction.customId === 'reportModal' &&
-                modalInteraction.user.id === interaction.user.id;
-
             const modalInteraction = await interaction.awaitModalSubmit({
-                filter,
-                time: 300000 // 5 minutes
+                filter: i => i.user.id === interaction.user.id, time: 300000
             });
 
-            // Get the data from inputs
-            const whatReported = modalInteraction.fields.getTextInputValue('whatReport');
-            const whyReported = modalInteraction.fields.getTextInputValue('whyReport');
-            const whenReported = modalInteraction.fields.getTextInputValue('whenReport');
+            // Get report data
+            const [whatReported, whyReported, whenReported] = ['whatReport', 'whyReport', 'whenReport'].map(field => modalInteraction.fields.getTextInputValue(field));
 
-            // Send evidence request instead of immediate acknowledgment
-            const evidenceRequest = new EmbedBuilder()
+            // Initialize evidence storage
+            const evidence = [];
+            const cleanupQueue = [];
+
+            // Create evidence collector
+            const evidenceCollector = modalInteraction.channel.createMessageCollector({
+                filter: m => m.author.id === interaction.user.id, time: 120_000, max: 8
+            });
+
+            // Send evidence instructions
+            const evidenceEmbed = new EmbedBuilder()
                 .setColor(EMBED_COLORS.WARNING)
                 .setTitle("📁 Evidence Submission")
-                .setDescription([
-                    "**Please upload your files now**",
-                    "- Max 8 files total",
-                    "- Supported types: PNG, JPG, MP4, TXT",
-                    "- Max file size: 8MB each",
-                    "- Drag & drop or click the '+' button",
-                    "\nType `done` when finished or `cancel` to abort"
-                ].join('\n'))
-                .setFooter({text: "You have 2 minutes to submit evidence"});
+                .setDescription(["**Attach your evidence files now**", "- Max 8 files (8MB each)", "- Supported: PNG, JPG, MP4, TXT", "- Type `done` to submit or `cancel` to abort"].join('\n'));
 
-            await modalInteraction.reply({
-                embeds: [evidenceRequest],
-                flags: 64
+            const instructions = await modalInteraction.reply({
+                embeds: [evidenceEmbed], fetchReply: true, flags: 64
             });
+            cleanupQueue.push(instructions);
 
-            // Evidence collector
-            const evidence = [];
-            const cleanupQueue = []; // Messages to clean up later
-            
-            const evidenceFilter = m => {
-                const isAuthor = m.author.id === modalInteraction.user.id;
-                const hasAttachments = m.attachments.size > 0;
-                const isTextCommand = ['done', 'cancel'].includes(m.content.toLowerCase());
-
-                return isAuthor && (hasAttachments || isTextCommand);
-            };
-
-            const collector = modalInteraction.channel.createMessageCollector({
-                filter: evidenceFilter,
-                time: 120_000,
-                max: 8
-            });
-
-            // Create report embed here so we can modify it later
-            const reportEmbed = new EmbedBuilder()
-                .setColor(EMBED_COLORS.WARNING)
-                .setTitle('New Report Submitted')
-                .setDescription(`A new report has been submitted by ${interaction.user.tag}`)
-                .addFields(
-                    {name: 'What was reported', value: whatReported},
-                    {name: 'Why it was reported', value: whyReported},
-                    {name: 'When it happened', value: whenReported || 'Not specified'}
-                )
-                .setFooter({text: `Reporter ID: ${interaction.user.id}`})
-                .setTimestamp();
-
-            const reporterInfo = `${interaction.user.tag} (ID: ${interaction.user.id})`;
-            
-            // Generate a unique case ID
-            const caseId = Math.random().toString(36).slice(2, 8).toUpperCase();
-
-            collector.on('collect', async m => {
+            // Process collected evidence
+            evidenceCollector.on('collect', async m => {
                 try {
                     if (m.content.toLowerCase() === 'cancel') {
-                        collector.stop('userCancelled');
-                        cleanupQueue.push(m);
+                        evidenceCollector.stop('userCancelled');
                         return;
                     }
 
                     if (m.content.toLowerCase() === 'done') {
-                        collector.stop('userFinished');
-                        cleanupQueue.push(m);
+                        evidenceCollector.stop('userFinished');
                         return;
                     }
-                    
-                    // Process attachments using AttachmentBuilder
+
+                    // Process attachments
                     for (const attachment of m.attachments.values()) {
-                        if (attachment.size > 8_388_608) { // 8MB limit
-                            const limitMsg = await modalInteraction.followUp({
-                                content: `❌ ${attachment.name} exceeds 8MB limit`,
-                                ephemeral: true
+                        // Validate attachment
+                        if (attachment.size > 8_388_608) {
+                            await modalInteraction.followUp({
+                                content: `❌ ${attachment.name} exceeds 8MB limit`, flag: 64
                             });
-                            cleanupQueue.push(limitMsg);
                             continue;
                         }
 
-                        const allowedTypes = ['image/png', 'image/jpeg', 'video/mp4', 'text/plain'];
-                        if (!allowedTypes.includes(attachment.contentType)) {
-                            const typeMsg = await modalInteraction.followUp({
-                                content: `❌ Unsupported file type for ${attachment.name}`,
-                                ephemeral: true
-                            });
-                            cleanupQueue.push(typeMsg);
-                            continue;
-                        }
-
-                        // Create AttachmentBuilder from URL
-                        const attachmentBuilder = new AttachmentBuilder(attachment.url, {
-                            name: attachment.name
+                        // Download and store attachment
+                        const response = await axios.get(attachment.url, {
+                            responseType: 'arraybuffer'
                         });
 
                         evidence.push({
-                            originalUrl: attachment.url,
-                            name: attachment.name,
-                            type: attachment.contentType,
-                            size: (attachment.size / 1024 / 1024).toFixed(2) + 'MB',
-                            attachment: attachmentBuilder
+                            name: attachment.name, data: Buffer.from(response.data), type: attachment.contentType
                         });
-
-                        // Create file preview embed
-                        const previewEmbed = new EmbedBuilder()
-                            .setColor(EMBED_COLORS.DEFAULT)
-                            .setTitle(`✅ Added ${attachment.name}`)
-                            .addFields(
-                                {name: 'Type', value: attachment.contentType, inline: true},
-                                {name: 'Size', value: (attachment.size / 1024 / 1024).toFixed(2) + 'MB', inline: true}
-                            );
-
-                        if (attachment.contentType.startsWith('image/')) {
-                            previewEmbed.setImage(attachment.url);
-                        }
-
-                        const confirmMsg = await modalInteraction.followUp({
-                            embeds: [previewEmbed],
-                            ephemeral: true
-                        });
-                        
-                        cleanupQueue.push(confirmMsg);
                     }
+
+                    cleanupQueue.push(m);
                 } catch (error) {
-                    console.error('Error processing files:', error);
-                    const errorMsg = await modalInteraction.followUp({
-                        content: '❌ Error processing your files. Please try again.',
-                        ephemeral: true
-                    });
-                    cleanupQueue.push(errorMsg);
+                    console.error('Error processing attachment:', error);
                 }
             });
 
-            collector.on('end', async (collected, reason) => {
-                const cancelled = reason === 'userCancelled' || reason === 'time';
+            // Handle collector completion
+            evidenceCollector.on('end', async (collected, reason) => {
+                try {
+                    if (reason === 'userCancelled' || reason === 'time') {
+                        await modalInteraction.followUp({
+                            content: '❌ Report cancelled', flags: 64
+                        });
+                        return;
+                    }
 
-                if (cancelled) {
-                    await modalInteraction.followUp({
-                        content: '❌ Report cancelled',
-                        ephemeral: true
-                    });
-                    return;
-                }
+                    // Create report embed
+                    const caseId = Math.random().toString(36).slice(2, 8).toUpperCase();
+                    const reportEmbed = new EmbedBuilder()
+                        .setColor(EMBED_COLORS.WARNING)
+                        .setTitle(`⚠️ New Report - Case ${caseId}`)
+                        .setDescription(`Report submitted by ${interaction.user.tag}`)
+                        .addFields({name: 'What', value: whatReported}, {
+                            name: 'Why',
+                            value: whyReported
+                        }, {name: 'When', value: whenReported}, {
+                            name: 'Attachments',
+                            value: evidence.length > 0 ? evidence.map(e => e.name).join('\n') : 'No files attached'
+                        })
+                        .setFooter({text: `Reporter ID: ${interaction.user.id}`});
 
-                // Create file list embed
-                const fileListEmbed = new EmbedBuilder()
-                    .setColor(EMBED_COLORS.SUCCESS)
-                    .setTitle(`📦 Collected Evidence (${evidence.length} files)`)
-                    .setDescription(evidence.length > 0 ?
-                        evidence.map(e => `${e.name} - ${e.type} (${e.size})`).join('\n') :
-                        "No files provided");
+                    // Prepare attachments
+                    const attachments = evidence.map(e => new AttachmentBuilder(e.data, {name: e.name}));
 
-                // Add to existing report embed
-                reportEmbed.addFields({
-                    name: `Attachments (${evidence.length})`,
-                    value: evidence.length > 0
-                        ? evidence.map(e => e.name).join('\n')
-                        : 'No files attached'
-                });
-                
-                // Add case ID to report embed
-                reportEmbed.addFields({
-                    name: 'Case ID',
-                    value: caseId
-                });
-
-                // Send to webhook if configured
-                if (config.REPORT_WEBHOOK_URL) {
-                    try {
-                        const webhookClient = new WebhookClient({url: config.REPORT_WEBHOOK_URL});
-                        
-                        // Extract AttachmentBuilders from evidence array
-                        const evidenceFiles = evidence.map(e => e.attachment);
-                        
-                        await webhookClient.send({
-                            username: 'GNOME Nepal Report System',
+                    // Send to webhook
+                    if (config.REPORT_WEBHOOK_URL) {
+                        const webhook = new WebhookClient({url: config.REPORT_WEBHOOK_URL});
+                        await webhook.send({
+                            username: 'Report System',
                             avatarURL: interaction.client.user.displayAvatarURL(),
                             embeds: [reportEmbed],
-                            files: evidenceFiles, // Send directly as AttachmentBuilder objects
-                            content: `**Reporter Information**\n${reporterInfo}`
+                            files: attachments,
+                            content: `**Case ID:** ${caseId}`
                         });
-
-                        console.log(`Report submitted by ${interaction.user.tag} (${interaction.user.id}) with ${evidence.length} attachments`);
-                    } catch (error) {
-                        console.error('Error sending report to webhook:', error);
-                        // Send fallback message to log channel if webhook fails
-                        if (config.REPORT_LOG_CHANNEL_ID) {
-                            try {
-                                const channel = await interaction.client.channels.fetch(config.REPORT_LOG_CHANNEL_ID);
-                                await channel.send({
-                                    embeds: [reportEmbed], 
-                                    files: evidence.map(e => e.attachment)
-                                });
-                            } catch (err) {
-                                console.error('Error sending report to log channel:', err);
-                            }
-                        }
                     }
-                } else {
-                    console.warn('REPORT_WEBHOOK_URL not configured. Reports will not be forwarded.');
-                }
 
-                // Final confirmation
-                const confirmationEmbed = new EmbedBuilder()
-                    .setColor(EMBED_COLORS.SUCCESS)
-                    .setDescription([
-                        `✅ Report submitted with ${evidence.length} files`,
-                        `**Case ID:** ${caseId}`,
-                        "Moderators will review your submission shortly"
-                    ].join('\n'));
+                    // Send confirmation
+                    const confirmation = new EmbedBuilder()
+                        .setColor(EMBED_COLORS.SUCCESS)
+                        .setDescription([`✅ Report submitted with ${evidence.length} files`, `**Case ID:** ${caseId}`, "Moderators will review your submission"].join('\n'));
 
-                await modalInteraction.followUp({
-                    embeds: [confirmationEmbed, fileListEmbed],
-                    ephemeral: true
-                });
-                
-                // Perform message cleanup
-                try {
+                    await modalInteraction.followUp({
+                        embeds: [confirmation], flags: 64
+                    });
+
+                    // Cleanup non-attachment messages after delay
                     setTimeout(async () => {
                         await Promise.all(cleanupQueue.map(async msg => {
-                            if (msg.deletable) {
-                                await msg.delete().catch(() => {});
+                            try {
+                                if (msg.attachments.size === 0 && msg.deletable) {
+                                    await msg.delete();
+                                }
+                            } catch (error) {
+                                console.error('Cleanup error:', error);
                             }
                         }));
-                    }, 5000); // Delay cleanup by 5 seconds to ensure all messages are processed
-                } catch (cleanupError) {
-                    console.error('Error during cleanup:', cleanupError);
+                    }, 5000);
+
+                } catch (error) {
+                    console.error('Report submission error:', error);
+                    await modalInteraction.followUp({
+                        content: '❌ Failed to submit report', flags: 64
+                    });
                 }
             });
+
         } catch (error) {
-            if (error.code === 'InteractionCollectorError') {
-                console.log(`Report modal timed out for ${interaction.user.tag}`);
-            } else {
-                console.error('Error handling report modal:', error);
-            }
+            console.error('Report command error:', error);
+            await interaction.followUp({
+                content: '❌ Report process failed', flags: 64
+            });
         }
     }
 };
