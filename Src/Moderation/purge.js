@@ -1,92 +1,100 @@
-const config = require('../../config-global');
-const {EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle} = require('discord.js');
-const {EMBED_COLORS, cooldown, COOLDOWN_TIME} = require('../../constants');
+const {EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, PermissionsBitField} = require('discord.js');
+const {EMBED_COLORS, MESSAGE_COLLECTOR_TIMEOUT} = require('../../constants');
 
 module.exports = {
     name: 'purge',
     description: 'Deletes a specified number of messages from a channel.',
     async execute(message, args) {
-        if (!message.content.startsWith(config.prefix) || message.author.bot) return;
-
-        const commandName = message.content.slice(config.prefix.length).trim().split(/\s+/)[0].toLowerCase();
-        if (commandName !== this.name) return;
-
-        if (cooldown.has(message.author.id)) {
-            return message.reply('You are on cooldown. Please wait a few seconds before using this command again.');
+        // Check if user has permission to manage messages
+        if (!message.member.permissions.has(PermissionsBitField.Flags.ManageMessages)) {
+            return message.reply('❌ You need the `Manage Messages` permission to use this command.')
+                .then(msg => setTimeout(() => msg.delete().catch(() => {}), 5000));
         }
 
         const numMessages = parseInt(args[0], 10);
-        if (isNaN(numMessages) || numMessages < 1 || numMessages > 50) {
-            return message.reply('Please provide a number between 1 and 50.');
+        if (isNaN(numMessages) || numMessages < 1 || numMessages > 100) {
+            return message.reply('Please provide a number between 1 and 100.')
+                .then(msg => setTimeout(() => msg.delete().catch(() => {}), 5000));
         }
 
         try {
             const fetched = await message.channel.messages.fetch({limit: numMessages + 1});
-            const totalMessages = fetched.size;
-
-            if (totalMessages === 0) {
-                return message.reply('No messages found to delete.');
+            const messagesToDelete = fetched.filter(msg => !msg.pinned && msg.deletable);
+            
+            if (messagesToDelete.size === 0) {
+                return message.reply('No messages found to delete, or messages are too old (>14 days).')
+                    .then(msg => setTimeout(() => msg.delete().catch(() => {}), 5000));
             }
 
-            await message.delete();
+            await message.delete().catch(() => {});
+            
+            const authorId = message.author.id;
 
             const embed = new EmbedBuilder()
-                .setColor(EMBED_COLORS.DEFAULT)
-                .setDescription(`Are you sure you want to delete ${totalMessages - 1} messages in this channel?\n\n > **Note: ⚠️ Due to Discord policy, I cannot delete messages older than 14 days.**`)
+                .setColor(EMBED_COLORS.WARNING)
+                .setDescription(`Are you sure you want to delete ${messagesToDelete.size} messages in this channel?\n\n > **Note: ⚠️ Due to Discord policy, I cannot delete messages older than 14 days.**`)
                 .setFooter({text: `Command run by ${message.author.tag}`, iconURL: message.author.displayAvatarURL()});
 
             const row = new ActionRowBuilder().addComponents(
-                new ButtonBuilder().setCustomId('confirm').setLabel('Yes').setStyle(ButtonStyle.Primary),
-                new ButtonBuilder().setCustomId('cancel').setLabel('Nevermind').setStyle(ButtonStyle.Danger)
+                new ButtonBuilder().setCustomId(`confirm_purge_${authorId}`).setLabel('Yes').setStyle(ButtonStyle.Danger),
+                new ButtonBuilder().setCustomId(`cancel_purge_${authorId}`).setLabel('Nevermind').setStyle(ButtonStyle.Secondary)
             );
 
             const confirmationMessage = await message.channel.send({embeds: [embed], components: [row]});
 
-            const filter = i => i.customId === 'confirm' || i.customId === 'cancel';
-            const collector = confirmationMessage.createMessageComponentCollector({filter, time: 15000});
+            // Updated filter to include user ID verification
+            const filter = i => 
+                (i.customId === `confirm_purge_${authorId}` || i.customId === `cancel_purge_${authorId}`) && 
+                i.user.id === authorId;
+                
+            const collector = confirmationMessage.createMessageComponentCollector({
+                filter, 
+                time: MESSAGE_COLLECTOR_TIMEOUT
+            });
 
             collector.on('collect', async i => {
-                if (i.customId === 'confirm') {
-                    const fetched = await message.channel.messages.fetch({limit: numMessages + 1});
-                    const filtered = fetched.filter(msg => msg.id !== confirmationMessage.id);
-                    const deleted = await message.channel.bulkDelete(filtered, true);
-                    const totalDeleted = deleted.size;
-
-                    if (totalDeleted === 0) {
-                        await confirmationMessage.delete();
-                        return message.channel.send('⚠️ Due to Discord policy, I cannot delete messages older than 14 days.');
-                    }
-
-                    const successEmbed = new EmbedBuilder()
-                        .setColor(EMBED_COLORS.SUCCESS)
-                        .setDescription(`Successfully deleted ${totalDeleted} messages in this channel.`)
-                        .setFooter({
-                            text: `Command run by ${message.author.tag}`,
-                            iconURL: message.author.displayAvatarURL()
-                        });
-
+                // Extra check to ensure only original user can interact
+                if (i.user.id !== authorId) {
+                    return i.reply({
+                        content: 'Only the user who initiated this command can interact with these buttons.',
+                        ephemeral: true
+                    });
+                }
+                
+                if (i.customId === `confirm_purge_${authorId}`) {
                     try {
-                        await confirmationMessage.edit({embeds: [successEmbed], components: []});
+                        const deleted = await message.channel.bulkDelete(messagesToDelete, true);
+                        
+                        const successEmbed = new EmbedBuilder()
+                            .setColor(EMBED_COLORS.SUCCESS)
+                            .setDescription(`Successfully deleted ${deleted.size} messages in this channel.`)
+                            .setFooter({
+                                text: `Command run by ${message.author.tag}`,
+                                iconURL: message.author.displayAvatarURL()
+                            });
+
+                        await i.update({embeds: [successEmbed], components: []});
                     } catch (error) {
-                        if (error.code !== 10008) {
-                            console.error('Error updating message:', error);
-                        }
+                        console.error('Error deleting messages:', error);
+                        await i.update({
+                            content: 'There was an error trying to delete messages. Some messages might be too old.',
+                            embeds: [],
+                            components: []
+                        });
                     }
                 } else {
-                    try {
-                        await i.update({content: 'Purge operation canceled.', components: []});
-                    } catch (error) {
-                        if (error.code !== 10008) {
-                            console.error('Error updating message:', error);
-                        }
-                    }
+                    await i.update({content: 'Purge operation canceled.', embeds: [], components: []});
                 }
             });
 
             collector.on('end', async collected => {
                 if (collected.size === 0) {
                     try {
-                        await confirmationMessage.edit({content: 'Purge operation timed out.', components: []});
+                        await confirmationMessage.edit({
+                            content: 'Purge operation timed out.', 
+                            embeds: [], 
+                            components: []
+                        });
                     } catch (error) {
                         if (error.code !== 10008) {
                             console.error('Error editing message:', error);
@@ -94,24 +102,16 @@ module.exports = {
                     }
                 }
             });
-
-            cooldown.add(message.author.id);
-            setTimeout(() => cooldown.delete(message.author.id), COOLDOWN_TIME);
         } catch (error) {
             const errorMessage = new EmbedBuilder()
                 .setColor(EMBED_COLORS.ERROR)
                 .setDescription('There was an error trying to delete messages in this channel.')
                 .setFooter({text: `Command run by ${message.author.tag}`, iconURL: message.author.displayAvatarURL()});
 
-            if (error.code === 'UND_ERR_CONNECT_TIMEOUT') {
-                console.error('Connection timeout error:', error);
-                errorMessage.setDescription('There was a connection timeout error while trying to delete messages in this channel.');
-            } else {
-                console.error('Error deleting messages:', error);
-            }
-
+            console.error('Error in purge command:', error);
+            
             const errorMsg = await message.channel.send({embeds: [errorMessage]});
-            setTimeout(() => errorMsg.delete(), COOLDOWN_TIME);
+            setTimeout(() => errorMsg.delete().catch(() => {}), 5000);
         }
     },
 };

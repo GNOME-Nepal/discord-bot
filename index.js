@@ -42,6 +42,49 @@ const allCommands = [];
 const registeredGuilds = [];
 
 const loadCommands = async () => {
+    // Load from main Src directory first
+    const srcPath = path.join(__dirname, 'Src');
+    
+    try {
+        const mainFiles = await fs.readdir(srcPath);
+        for (const file of mainFiles) {
+            const filePath = path.join(srcPath, file);
+            const stat = await fs.stat(filePath);
+            
+            // Only process files (not directories) that are JavaScript files
+            if (stat.isFile() && file.endsWith('.js')) {
+                try {
+                    const command = require(filePath);
+
+                    if (command.data) {
+                        client.slashCommands.set(command.data.name, command);
+                        allCommands.push({
+                            name: command.data.name,
+                            type: 'Slash',
+                            description: command.data.description || 'No description',
+                            status: '✓'
+                        });
+                    } else if (command.name) {
+                        client.commands.set(command.name, command);
+                        allCommands.push({
+                            name: command.name,
+                            type: 'Regular',
+                            description: command.description || 'No description',
+                            status: '✓'
+                        });
+                    } else {
+                        console.log(`Skipping ${file}: missing required properties`);
+                    }
+                } catch (err) {
+                    console.log(`Failed to load ${file} from main Src: ${err.message}`);
+                }
+            }
+        }
+    } catch (err) {
+        console.log(`Failed to read main Src directory: ${err.message}`);
+    }
+    
+    // Then load from subdirectories
     const categories = ['General', 'System-Admin', 'Moderation', 'Slash-Commands'];
 
     for (const category of categories) {
