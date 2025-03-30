@@ -28,6 +28,7 @@ const fs = require('fs').promises;
 const path = require('path');
 const activities = require('./activities');
 const Table = require('cli-table3');
+const {handleMention} = require('./Src/mention.js');
 
 const client = new Client({
     intents: [
@@ -294,6 +295,11 @@ client.on('interactionCreate', async interaction => {
             });
         }
     }
+});
+
+
+client.on('messageCreate', async message => {
+    await handleMention(message, client);
 });
 
 // Handle role-based prefix commands only

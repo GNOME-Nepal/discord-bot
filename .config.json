@@ -1,15 +1,13 @@
 {
   "CLIENT_ID": "your-client-id",
   "TOKEN": "your-bot-token",
-  "ADMINPREFIX": "your-admin-prefix",
   "GUILD_ID": "your-guild-id",
   "GITHUB_TOKEN": "your-github-token",
   "MEME_API_KEY": "your-meme-api-key",
   "MEME_API_URL": "your-meme-api-url",
   "REPORT_WEBHOOK_URL": "your-report-webhook-url",
   "REPORT_LOG_CHANNEL_ID": "your-report-log-channel-id",
-  "prefix": "your-prefix",
   "Member": "your-member",
-  "MOD_ROLE": "your-mod-role",
-  "Contributor": "your-contributor-role"
+  "Contributor": "your-contributor-role",
+  "Maintainer": "your-maintainer-role"
 }

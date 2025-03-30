@@ -1,4 +1,4 @@
-module.export = [
+module.exports = [
     "Hey, you rang? I'm here to save the day! 🦸",
     "Oh, a ping! Did I win the lottery or something? 🎉",
     "Yo, what's up? You summoned the bot overlord! 👾",
