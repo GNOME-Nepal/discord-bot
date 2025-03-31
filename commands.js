@@ -90,24 +90,6 @@ module.exports = {
         emoji: '👥'
     },
         {
-            name: 'meme',
-            description: 'Fetches a random meme from Reddit',
-            syntax: '/meme',
-            usage: '/meme',
-            emoji: '😂'
-        }, {
-            name: 'docs',
-            description: 'Provides documentation links (under development)',
-            syntax: '/docs',
-            usage: '/docs',
-            emoji: '📄'
-        }, {
-            name: 'ping',
-            description: 'Replies with bot\'s latency information and top contributors',
-            syntax: '/ping',
-            usage: '/ping',
-            emoji: '🏓'
-        }, {
             name: "report",
             description: "Report an issue with the bot or user",
             syntax: "/report <issue>",
