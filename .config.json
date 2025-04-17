@@ -1,13 +1,11 @@
 {
-  "CLIENT_ID": "your-client-id",
-  "TOKEN": "your-bot-token",
-  "GUILD_ID": "your-guild-id",
-  "GITHUB_TOKEN": "your-github-token",
-  "MEME_API_KEY": "your-meme-api-key",
-  "MEME_API_URL": "your-meme-api-url",
-  "REPORT_WEBHOOK_URL": "your-report-webhook-url",
-  "REPORT_LOG_CHANNEL_ID": "your-report-log-channel-id",
-  "Member": "your-member",
-  "Contributor": "your-contributor-role",
-  "Maintainer": "your-maintainer-role"
+    "CLIENT_ID": "YOUR_CLIENT_ID_HERE",
+    "TOKEN": "YOUR_BOT_TOKEN_HERE",
+    "GUILD_ID": "YOUR_GUILD_ID_HERE",
+    "MOD_ROLE_ID": "YOUR_MOD_ROLE_ID_HERE",
+    "REPORT_WEBHOOK_URL": "YOUR_WEBHOOK_URL_HERE",
+    "REPORT_LOG_CHANNEL_ID": "YOUR_LOG_CHANNEL_ID_HERE",
+    "MEMBER_ROLE_ID": "YOUR_MEMBER_ROLE_ID_HERE",
+    "CONTRIBUTOR_ROLE_ID": "YOUR_CONTRIBUTOR_ROLE_ID_HERE",
+    "MAINTAINER_ROLE_ID": "YOUR_MAINTAINER_ROLE_ID_HERE"
 }

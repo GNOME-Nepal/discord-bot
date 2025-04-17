@@ -6,7 +6,7 @@
  */
 
 const os = require('os');
-const packageJson = require('./package.json'); // Corrected path
+const packageJson = require('../package.json'); // Corrected path
 const {EmbedBuilder} = require('discord.js');
 const RANDOM_MEME = 'https://meme-api.com/gimme';
 

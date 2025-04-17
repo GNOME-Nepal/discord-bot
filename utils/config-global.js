@@ -5,7 +5,7 @@
  * affect other parts of the application that rely on these configuration values.
  */
 
-const config = require('./config.json');
+const config = require('../config.json');
 
 module.exports = {
     CLIENT_ID: config.CLIENT_ID,
