@@ -1,9 +1,12 @@
 const {EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, PermissionsBitField} = require('discord.js');
-const {EMBED_COLORS, MESSAGE_COLLECTOR_TIMEOUT} = require('../../constants');
+const {EMBED_COLORS, MESSAGE_COLLECTOR_TIMEOUT} = require('../../utils/constants.js');
 
 module.exports = {
     name: 'purge',
     description: 'Deletes a specified number of messages from a channel.',
+    syntax: '$packman purge <number>',
+    usage: '$packman purge 10',
+    emoji: '🧹',
     async execute(message, args) {
         // Check if user has permission to manage messages
         if (!message.member.permissions.has(PermissionsBitField.Flags.ManageMessages)) {
@@ -61,7 +64,7 @@ module.exports = {
                 if (i.user.id !== authorId) {
                     return i.reply({
                         content: 'Only the user who initiated this command can interact with these buttons.',
-                        ephemeral: true
+                        flags: 64
                     });
                 }
 

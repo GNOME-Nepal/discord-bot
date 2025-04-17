@@ -8,15 +8,20 @@ const {
     WebhookClient,
     AttachmentBuilder
 } = require('discord.js');
-const {EMBED_COLORS} = require('../../constants');
-const config = require('../../config-global');
+const {EMBED_COLORS} = require('../../utils/constants.js');
+const config = require('../../utils/config-global.js');
 const axios = require('axios');
+const { sendTemporaryMessage, cleanupMessages } = require('../cmd/utils/interactionHelpers.js');
 
 module.exports = {
     data: new SlashCommandBuilder()
         .setName('report')
         .setDescription('Submit a formal report to the moderation team'),
-
+    name: 'report',
+    description: 'Submit a formal report to the moderation team',
+    syntax: '/report',
+    usage: '/report',
+    emoji: '📝',
     async execute(interaction) {
         // Create the modal
         const modal = new ModalBuilder()
@@ -76,10 +81,10 @@ module.exports = {
                 .setTitle("📁 Evidence Submission")
                 .setDescription(["**Attach your evidence files now**", "- Max 8 files (8MB each)", "- Supported: PNG, JPG, MP4, TXT", "- Type `done` to submit or `cancel` to abort"].join('\n'));
 
-            const instructions = await modalInteraction.reply({
-                embeds: [evidenceEmbed], fetchReply: true, flags: 64
+            const instructions = await sendTemporaryMessage(modalInteraction, null, {
+                embeds: [evidenceEmbed], fetchReply: true
             });
-            cleanupQueue.push(instructions);
+            if (instructions) cleanupQueue.push(instructions);
 
             // Process collected evidence
             evidenceCollector.on('collect', async m => {
@@ -98,9 +103,7 @@ module.exports = {
                     for (const attachment of m.attachments.values()) {
                         // Validate attachment
                         if (attachment.size > 8_388_608) {
-                            await modalInteraction.followUp({
-                                content: `❌ ${attachment.name} exceeds 8MB limit`, flag: 64
-                            });
+                            await sendTemporaryMessage(modalInteraction, `❌ ${attachment.name} exceeds 8MB limit`);
                             continue;
                         }
 
@@ -124,9 +127,7 @@ module.exports = {
             evidenceCollector.on('end', async (collected, reason) => {
                 try {
                     if (reason === 'userCancelled' || reason === 'time') {
-                        await modalInteraction.followUp({
-                            content: '❌ Report cancelled', flags: 64
-                        });
+                        await sendTemporaryMessage(modalInteraction, '❌ Report cancelled');
                         return;
                     }
 
@@ -165,36 +166,20 @@ module.exports = {
                         .setColor(EMBED_COLORS.SUCCESS)
                         .setDescription([`✅ Report submitted with ${evidence.length} files`, `**Case ID:** ${caseId}`, "Moderators will review your submission"].join('\n'));
 
-                    await modalInteraction.followUp({
-                        embeds: [confirmation], flags: 64
-                    });
+                    await sendTemporaryMessage(modalInteraction, null, { embeds: [confirmation] });
 
                     // Cleanup non-attachment messages after delay
-                    setTimeout(async () => {
-                        await Promise.all(cleanupQueue.map(async msg => {
-                            try {
-                                if (msg.attachments.size === 0 && msg.deletable) {
-                                    await msg.delete();
-                                }
-                            } catch (error) {
-                                console.error('Cleanup error:', error);
-                            }
-                        }));
-                    }, 5000);
+                    cleanupMessages(cleanupQueue);
 
                 } catch (error) {
                     console.error('Report submission error:', error);
-                    await modalInteraction.followUp({
-                        content: '❌ Failed to submit report', flags: 64
-                    });
+                    await sendTemporaryMessage(modalInteraction, '❌ Failed to submit report');
                 }
             });
 
         } catch (error) {
             console.error('Report command error:', error);
-            await interaction.followUp({
-                content: '❌ Report process failed', flags: 64
-            });
+            await sendTemporaryMessage(interaction, '❌ Report process failed');
         }
     }
 };

@@ -1,10 +1,13 @@
 const {ActionRowBuilder, ButtonBuilder, ButtonStyle} = require('discord.js');
-const {memeApi} = require('../../api.js');
-const {EMBED_COLORS, BUTTON_TIMEOUT} = require('../../constants.js');
+const {memeApi} = require('../../utils/api.js');
+const {EMBED_COLORS, BUTTON_TIMEOUT} = require('../../utils/constants.js');
 
 module.exports = {
     name: 'meme',
     description: 'Fetches a random meme from Reddit',
+    syntax: 'sudo meme',
+    usage: 'sudo meme',
+    emoji: '😂',
     async execute(message) {
         try {
             const response = await memeApi.get('/gimme');
@@ -78,7 +81,7 @@ module.exports = {
                     console.error('Error fetching next meme:', error);
                     await interaction.followUp({
                         content: 'Failed to fetch next meme.',
-                        ephemeral: true
+                        flags: 64
                     });
                 }
             });
@@ -124,7 +127,7 @@ module.exports = {
             image: {url: data.url},
             color: EMBED_COLORS.DEFAULT,
             footer: {
-                text: `👍 ${data.ups} | Author: ${data.author} | Updates for ${remainingSeconds}s`
+                text: `👍 ${data.ups || 0} | Author: ${data.author || 'Unknown'} | Updates for ${typeof remainingSeconds === 'number' ? remainingSeconds : 0}s`
             }
         };
     }

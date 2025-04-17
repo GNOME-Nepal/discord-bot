@@ -1,11 +1,16 @@
 const {SlashCommandBuilder, ActionRowBuilder, StringSelectMenuBuilder, EmbedBuilder} = require('discord.js');
-const {fetchGnomeNepalData} = require('../../api.js');
-const {MESSAGE_COLLECTOR_TIMEOUT, EMBED_COLORS, remainingTime} = require('../../constants.js');
+const {fetchGnomeNepalData} = require('../../utils/api.js');
+const {MESSAGE_COLLECTOR_TIMEOUT, EMBED_COLORS, remainingTime} = require('../../utils/constants.js');
 
 module.exports = {
     data: new SlashCommandBuilder()
         .setName('about')
         .setDescription('Provides information about the GNOME-Nepal organization.'),
+    name: 'about',
+    description: 'Provides information about the GNOME-Nepal organization.',
+    syntax: '/about',
+    usage: '/about',
+    emoji: 'ℹ️',
     async execute(interaction) {
         await interaction.deferReply();
 

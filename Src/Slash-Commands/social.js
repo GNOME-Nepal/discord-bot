@@ -4,15 +4,20 @@ const {
     ActionRowBuilder,
     StringSelectMenuBuilder,
     ButtonBuilder,
-    ButtonStyle,
-    MessageFlags
+    ButtonStyle
 } = require('discord.js');
-const {MESSAGE_COLLECTOR_TIMEOUT, EMBED_COLORS, remainingTime} = require('../../constants.js');
+const {MESSAGE_COLLECTOR_TIMEOUT, EMBED_COLORS, remainingTime} = require('../../utils/constants.js');
+const socialLinks = require('../../utils/social-links.js');
 
 module.exports = {
     data: new SlashCommandBuilder()
         .setName('social')
         .setDescription('Provides social media links for the organization.'),
+    name: 'social',
+    description: 'Provides social media links for the organization.',
+    syntax: '/social',
+    usage: '/social',
+    emoji: '🔗',
     async execute(interaction) {
         try {
             const embed = new EmbedBuilder()
@@ -48,12 +53,7 @@ module.exports = {
                 }
             ];
 
-            const socialLinks = {
-                website: 'https://nepal.gnome.org/',
-                facebook: 'https://m.facebook.com/61560797123131/',
-                instagram: 'https://www.instagram.com/gnomenepal/',
-                linkedin: 'https://www.linkedin.com/company/gnomenepal/posts/?feedView=all'
-            };
+            // Social links are now imported from utils/social-links.js
 
             const row = new ActionRowBuilder()
                 .addComponents(
@@ -65,14 +65,13 @@ module.exports = {
 
             let remainingTimeLocal = remainingTime;
 
-            await interaction.reply({
+            // Use withResponse: true instead of fetchReply: true
+            const message = await interaction.reply({
                 content: `Time remaining: ${remainingTimeLocal} seconds`,
                 embeds: [embed],
-                components: [row]
+                components: [row],
+                withResponse: true
             });
-
-            // Get the message after replying
-            const message = await interaction.fetchReply();
 
             const filter = i => i.customId === 'select-social' && i.user.id === interaction.user.id;
             const collector = message.createMessageComponentCollector({
@@ -112,7 +111,7 @@ module.exports = {
                 await i.reply({
                     content: `Click the button below to visit our ${selectedOption.label} page:`,
                     components: [linkButton],
-                    flags: MessageFlags.Ephemeral
+                    flags: 64 // Ephemeral flag
                 });
             });
 
