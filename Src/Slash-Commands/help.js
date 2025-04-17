@@ -1,13 +1,19 @@
 const {SlashCommandBuilder} = require('@discordjs/builders');
 const {EmbedBuilder} = require('discord.js');
-const commands = require('../../commands');
 
 module.exports = {
     data: new SlashCommandBuilder()
         .setName('help')
         .setDescription('Displays a list of available commands and their descriptions.'),
+    name: 'help',
+    description: 'Displays a list of available commands and their descriptions.',
+    syntax: '/help',
+    usage: '/help',
+    emoji: '📚',
     async execute(interaction) {
-        const slashCommands = commands['slash-commands'];
+        // Access the client object through the interaction
+        const client = interaction.client;
+        const slashCommands = client.slashCommands;
 
         const embed = new EmbedBuilder()
             .setColor(0x00ae86)
@@ -16,8 +22,8 @@ module.exports = {
 
         slashCommands.forEach(cmd => {
             embed.addFields({
-                name: `${cmd.emoji} ${cmd.name}`,
-                value: `${cmd.description}\n**Syntax:** \`${cmd.syntax}\`\n**Example:** \`${cmd.usage}\``
+                name: `${cmd.emoji || '🔹'} ${cmd.name}`,
+                value: `${cmd.description}\n**Syntax:** \`${cmd.syntax || `/${cmd.name}`}\`\n**Example:** \`${cmd.usage || `/${cmd.name}`}\``
             });
         });
 

@@ -1,11 +1,15 @@
 const {EmbedBuilder} = require('discord.js');
-const commands = require('../../commands');
 
 module.exports = {
     name: 'help',
     description: 'Displays a list of available prefix commands and their descriptions.',
+    syntax: 'sudo help',
+    usage: 'sudo help',
+    emoji: '📚',
     execute(message) {
-        const memberCommands = commands.member;
+        // Access the client object through the message
+        const client = message.client;
+        const memberCommands = client.memberCommands;
 
         const embed = new EmbedBuilder()
             .setColor(0x00ae86)
@@ -14,8 +18,8 @@ module.exports = {
 
         memberCommands.forEach(cmd => {
             embed.addFields({
-                name: `${cmd.emoji} ${cmd.name}`,
-                value: `${cmd.description}\n**Syntax:** \`${cmd.syntax}\`\n**Example:** \`${cmd.usage}\``
+                name: `${cmd.emoji || '🔹'} ${cmd.name}`,
+                value: `${cmd.description || 'No description'}\n**Syntax:** \`${cmd.syntax || `sudo ${cmd.name}`}\`\n**Example:** \`${cmd.usage || `sudo ${cmd.name}`}\``
             });
         });
 

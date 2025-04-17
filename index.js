@@ -22,13 +22,13 @@ const {
     MEMBER_ROLE_ID,
     CONTRIBUTOR_ROLE_ID,
     MAINTAINER_ROLE_ID
-} = require('./config-global');
-const {ACTIVITY_ROTATION_INTERVAL} = require('./constants');
+} = require('./utils/config-global');
+const {ACTIVITY_ROTATION_INTERVAL} = require('./utils/constants');
 const fs = require('fs').promises;
 const path = require('path');
-const activities = require('./activities');
+const activities = require('./utils/activities');
 const Table = require('cli-table3');
-const {handleMention} = require('./Src/mention.js');
+const {handleMention} = require('./Src/cmd/events/mentionHandler.js');
 
 const client = new Client({
     intents: [
@@ -72,6 +72,7 @@ const prefixCommandMappings = [
 ];
 
 const loadCommands = async () => {
+    console.log("[INFO] Starting command loading process");
     console.log("--- Starting Command Loading ---");
 
     // Load from main Src directory (only for slash commands)
@@ -392,7 +393,9 @@ client.on('ready', () => {
     await registerCommands();
 
     try {
+        console.log("[INFO] Connecting to Discord...");
         await client.login(TOKEN);
+        console.log("[OK] Bot successfully connected to Discord");
     } catch (error) {
         console.error("CRITICAL: Failed to connect to Discord:", error);
         process.exit(1);

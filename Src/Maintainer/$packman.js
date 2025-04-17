@@ -1,11 +1,15 @@
 const {EmbedBuilder} = require('discord.js');
-const commands = require('../../commands');
 
 module.exports = {
     name: 'help',
     description: 'Displays a list of available maintainer commands and their descriptions.',
+    syntax: '$packman help',
+    usage: '$packman help',
+    emoji: '📚',
     execute(message) {
-        const maintainerCommands = commands.maintainer;
+        // Access the client object through the message
+        const client = message.client;
+        const maintainerCommands = client.maintainerCommands;
 
         const embed = new EmbedBuilder()
             .setColor(0xe74c3c)
@@ -14,8 +18,8 @@ module.exports = {
 
         maintainerCommands.forEach(cmd => {
             embed.addFields({
-                name: `${cmd.emoji} ${cmd.name}`,
-                value: `${cmd.description}\n**Syntax:** \`${cmd.syntax}\`\n**Example:** \`${cmd.usage}\``
+                name: `${cmd.emoji || '🔹'} ${cmd.name}`,
+                value: `${cmd.description || 'No description'}\n**Syntax:** \`${cmd.syntax || `$packman ${cmd.name}`}\`\n**Example:** \`${cmd.usage || `$packman ${cmd.name}`}\``
             });
         });
 
