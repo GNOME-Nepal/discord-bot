@@ -69,17 +69,17 @@ async function loadCommands() {
 
     // Define role-based prefix mappings
     const prefixCommandMappings = [
-        { prefix: 'sudo', roleId: process.env.MEMBER_ROLE_ID || require('../../../utils/config-global').MEMBER_ROLE_ID, collection: memberCommands, dir: 'Member', roleName: 'Member' },
+        { prefix: 'sudo', roleId: process.env.MEMBER_ROLE_ID || require('../bot/config-global').MEMBER_ROLE_ID, collection: memberCommands, dir: 'Member', roleName: 'Member' },
         {
             prefix: '$sudo',
-            roleId: process.env.CONTRIBUTOR_ROLE_ID || require('../../../utils/config-global').CONTRIBUTOR_ROLE_ID,
+            roleId: process.env.CONTRIBUTOR_ROLE_ID || require('../bot/config-global').CONTRIBUTOR_ROLE_ID,
             collection: contributorCommands,
             dir: 'Contributor',
             roleName: 'Contributor'
         },
         {
             prefix: '$packman',
-            roleId: process.env.MAINTAINER_ROLE_ID || require('../../../utils/config-global').MAINTAINER_ROLE_ID,
+            roleId: process.env.MAINTAINER_ROLE_ID || require('../bot/config-global').MAINTAINER_ROLE_ID,
             collection: maintainerCommands,
             dir: 'Maintainer',
             roleName: 'Maintainer'

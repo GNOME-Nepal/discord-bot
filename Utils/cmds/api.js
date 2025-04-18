@@ -1,5 +1,5 @@
 const axios = require('axios');
-const {GITHUB_TOKEN} = require('./config-global');
+const {GITHUB_TOKEN} = require('../bot/config-global');
 
 const githubAPI = axios.create({
     baseURL: 'https://api.github.com',
