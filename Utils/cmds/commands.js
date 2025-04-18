@@ -37,10 +37,10 @@ const loadCommands = (dir) => {
 };
 
 // Define paths
-const memberPath = path.join(__dirname, '..', 'Src', 'Member');
-const contributorPath = path.join(__dirname, '..', 'Src', 'Contributor');
-const maintainerPath = path.join(__dirname, '..', 'Src', 'Maintainer');
-const slashCommandsPath = path.join(__dirname, '..', 'Src', 'Slash-Commands');
+const memberPath = path.join(__dirname, '..', '..', 'Src', 'Member');
+const contributorPath = path.join(__dirname, '..', '..', 'Src', 'Contributor');
+const maintainerPath = path.join(__dirname, '..', '..', 'Src', 'Maintainer');
+const slashCommandsPath = path.join(__dirname, '..', '..', 'Src', 'Slash-Commands');
 
 // Export command collections
 module.exports = {

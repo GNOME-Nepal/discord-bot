@@ -8,10 +8,10 @@ const {
     WebhookClient,
     AttachmentBuilder
 } = require('discord.js');
-const {EMBED_COLORS} = require('../../utils/constants.js');
-const config = require('../../utils/config-global.js');
+const {EMBED_COLORS} = require('../../Utils/cmds/constants.js');
+const config = require('../../Utils/bot/config-global');
 const axios = require('axios');
-const { sendTemporaryMessage, cleanupMessages } = require('../cmd/utils/interactionHelpers.js');
+const { sendTemporaryMessage, cleanupMessages } = require('../../Utils/bot/interactionHelpers');
 
 module.exports = {
     data: new SlashCommandBuilder()

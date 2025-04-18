@@ -56,7 +56,7 @@ const calculateLatencies = (interaction) => {
 const MESSAGE_COLLECTOR_TIMEOUT = 100000;
 const remainingTime = MESSAGE_COLLECTOR_TIMEOUT / 1000;
 const cooldown = new Set();
-const COOLDOWN_TIME = 5000; // 5 seconds cooldown
+const COOLDOWN_TIME = 5000;
 
 const EMBED_COLORS = {
     DEFAULT: 0x62a0ea, // Blue

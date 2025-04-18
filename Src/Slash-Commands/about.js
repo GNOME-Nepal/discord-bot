@@ -1,6 +1,6 @@
 const {SlashCommandBuilder, ActionRowBuilder, StringSelectMenuBuilder, EmbedBuilder} = require('discord.js');
-const {fetchGnomeNepalData} = require('../../utils/api.js');
-const {MESSAGE_COLLECTOR_TIMEOUT, EMBED_COLORS, remainingTime} = require('../../utils/constants.js');
+const {fetchGnomeNepalData} = require('../../Utils/cmds/api.js');
+const {MESSAGE_COLLECTOR_TIMEOUT, EMBED_COLORS, remainingTime} = require('../../Utils/cmds/constants.js');
 
 module.exports = {
     data: new SlashCommandBuilder()

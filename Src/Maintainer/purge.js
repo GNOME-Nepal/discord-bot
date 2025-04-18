@@ -1,5 +1,5 @@
 const {EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, PermissionsBitField} = require('discord.js');
-const {EMBED_COLORS, MESSAGE_COLLECTOR_TIMEOUT} = require('../../utils/constants.js');
+const {EMBED_COLORS, MESSAGE_COLLECTOR_TIMEOUT} = require('../../Utils/cmds/constants.js');
 
 module.exports = {
     name: 'purge',

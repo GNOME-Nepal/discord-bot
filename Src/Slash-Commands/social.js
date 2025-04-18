@@ -6,8 +6,8 @@ const {
     ButtonBuilder,
     ButtonStyle
 } = require('discord.js');
-const {MESSAGE_COLLECTOR_TIMEOUT, EMBED_COLORS, remainingTime} = require('../../utils/constants.js');
-const socialLinks = require('../../utils/social-links.js');
+const {MESSAGE_COLLECTOR_TIMEOUT, EMBED_COLORS, remainingTime} = require('../../Utils/cmds/constants');
+const socialLinks = require('../../Utils/cmds/social-links');
 
 module.exports = {
     data: new SlashCommandBuilder()

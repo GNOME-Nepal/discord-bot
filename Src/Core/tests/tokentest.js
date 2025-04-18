@@ -1,5 +1,5 @@
 const axios = require('axios');
-const config = require('../../../utils/config-global');
+const config = require('../../../Utils/bot/config-global.js');
 const Table = require('cli-table3');
 
 const results = [];

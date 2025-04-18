@@ -1,7 +1,7 @@
-const { MEMBER_ROLE_ID, CONTRIBUTOR_ROLE_ID, MAINTAINER_ROLE_ID } = require('../../../utils/config-global.js');
-const funMessages = require('../../../utils/Funtext.js');
+const { MEMBER_ROLE_ID, CONTRIBUTOR_ROLE_ID, MAINTAINER_ROLE_ID } = require('../../../Utils/bot/config-global');
+const funMessages = require('../../../Utils/bot/Funtext.js');
 const { EmbedBuilder } = require('discord.js');
-const { EMBED_COLORS } = require('../../../utils/constants.js');
+const { EMBED_COLORS } = require('../../../Utils/cmds/constants.js');
 
 // Cache messages and configuration
 const cachedMessages = [...funMessages];

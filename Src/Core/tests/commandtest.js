@@ -3,7 +3,7 @@ const fs = require('fs').promises;
 const path = require('path');
 const Table = require('cli-table3');
 const { Collection } = require('discord.js');
-const commands = require('../../../utils/commands');
+const commands = require('../../../Utils/cmds/commands.js');
 
 // Command Collections
 const slashCommands = new Collection();
@@ -16,28 +16,26 @@ const registeredGuilds = [];
 
 // Define role-based prefix mappings
 const prefixCommandMappings = [
-    { prefix: 'sudo', roleId: process.env.MEMBER_ROLE_ID || require('../../../utils/config-global').MEMBER_ROLE_ID, collection: memberCommands, dir: 'Member', roleName: 'Member' },
+    { prefix: 'sudo', roleId: process.env.MEMBER_ROLE_ID || require('../../../Utils/bot/config-global.js').MEMBER_ROLE_ID, collection: memberCommands, dir: 'Member', roleName: 'Member' },
     {
         prefix: '$sudo',
-        roleId: process.env.CONTRIBUTOR_ROLE_ID || require('../../../utils/config-global').CONTRIBUTOR_ROLE_ID,
+        roleId: process.env.CONTRIBUTOR_ROLE_ID || require('../../../Utils/bot/config-global.js').CONTRIBUTOR_ROLE_ID,
         collection: contributorCommands,
         dir: 'Contributor',
         roleName: 'Contributor'
     },
     {
         prefix: '$packman',
-        roleId: process.env.MAINTAINER_ROLE_ID || require('../../../utils/config-global').MAINTAINER_ROLE_ID,
+        roleId: process.env.MAINTAINER_ROLE_ID || require('../../../Utils/bot/config-global.js').MAINTAINER_ROLE_ID,
         collection: maintainerCommands,
         dir: 'Maintainer',
         roleName: 'Maintainer'
     }
 ];
 
-// Load commands from file structure
 const loadCommands = async () => {
     console.log("--- Starting Command Loading ---");
 
-    // Load from main Src directory (only for slash commands)
     const srcPath = path.join(__dirname, '..', 'Src');
     try {
         const mainFiles = await fs.readdir(srcPath);

@@ -1,6 +1,6 @@
 const {EmbedBuilder} = require('discord.js');
-const {fetchTopContributors} = require('../../utils/api.js');
-const {EMBED_COLORS, calculateLatencies} = require('../../utils/constants.js');
+const {fetchTopContributors} = require('../../Utils/cmds/api.js');
+const {EMBED_COLORS, calculateLatencies} = require('../../Utils/cmds/constants.js');
 const packageJson = require('../../package.json');
 
 module.exports = {

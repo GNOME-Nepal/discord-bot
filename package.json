@@ -4,10 +4,10 @@
   "description": "A discord bot made specifically for the GNOME Nepal Discord server",
   "main": "index.js",
   "scripts": {
-    "test": "node Src/cmd/tests/commandtest.js",
+    "test": "node Src/Core/tests/commandtest.js",
     "dev": "nodemon index.js",
     "start": "node index.js",
-    "ttest": "node Src/cmd/tests/tokentest.js"
+    "ttest": "node Src/Core/tests/tokentest.js"
   },
   "author": "",
   "license": "ISC",

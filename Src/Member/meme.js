@@ -1,6 +1,6 @@
 const {ActionRowBuilder, ButtonBuilder, ButtonStyle} = require('discord.js');
-const {memeApi} = require('../../utils/api.js');
-const {EMBED_COLORS, BUTTON_TIMEOUT} = require('../../utils/constants.js');
+const {memeApi} = require('../../Utils/cmds/api.js');
+const {EMBED_COLORS, BUTTON_TIMEOUT} = require('../../Utils/cmds/constants.js');
 
 module.exports = {
     name: 'meme',
