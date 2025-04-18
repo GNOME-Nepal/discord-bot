@@ -5,4 +5,5 @@ config.json
 .DS_Store
 .vscode
 npm-debug.log
-
+Event/event.json
+event.json
