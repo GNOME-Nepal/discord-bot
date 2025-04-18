@@ -65,12 +65,12 @@ module.exports = {
 
             let remainingTimeLocal = remainingTime;
 
-            // Use withResponse: true instead of fetchReply: true
+            // Use fetchReply: true to get the message object
             const message = await interaction.reply({
                 content: `Time remaining: ${remainingTimeLocal} seconds`,
                 embeds: [embed],
                 components: [row],
-                withResponse: true
+                fetchReply: true
             });
 
             const filter = i => i.customId === 'select-social' && i.user.id === interaction.user.id;

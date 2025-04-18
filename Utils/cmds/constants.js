@@ -8,7 +8,7 @@
 const os = require('os');
 const packageJson = require('../../package.json'); // Corrected path
 const {EmbedBuilder} = require('discord.js');
-const RANDOM_MEME = 'https://meme-api.com/gimme';
+const RANDOM_MEME = 'https://meme-api.herokuapp.com/gimme';
 
 function createContributors(data) {
     return data.map(contributor => ({

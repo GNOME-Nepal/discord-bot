@@ -10,7 +10,7 @@ const githubAPI = axios.create({
 });
 
 const memeApi = axios.create({
-    baseURL: 'https://meme-api.com'
+    baseURL: 'https://meme-api.herokuapp.com'
 });
 
 async function fetchTopContributors() {
