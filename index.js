@@ -22,13 +22,13 @@ const {
     MEMBER_ROLE_ID,
     CONTRIBUTOR_ROLE_ID,
     MAINTAINER_ROLE_ID
-} = require('./utils/config-global');
-const {ACTIVITY_ROTATION_INTERVAL} = require('./utils/constants');
+} = require('./Utils/bot/config-global');
+const {ACTIVITY_ROTATION_INTERVAL} = require('./Utils/cmds/constants');
 const fs = require('fs').promises;
 const path = require('path');
-const activities = require('./utils/activities');
+const activities = require('./Utils/bot/activities');
 const Table = require('cli-table3');
-const {handleMention} = require('./Src/cmd/events/mentionHandler.js');
+const {handleMention} = require('./Src/Core/events/mentionHandler.js');
 
 const client = new Client({
     intents: [
