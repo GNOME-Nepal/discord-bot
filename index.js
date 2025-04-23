@@ -29,6 +29,7 @@ const path = require('path');
 const activities = require('./Utils/bot/activities');
 const Table = require('cli-table3');
 const {handleMention} = require('./Src/Core/events/mentionHandler.js');
+const {loadEventHandlers} = require('./Event/event-loader.js');
 
 const client = new Client({
     intents: [
@@ -372,8 +373,12 @@ client.on('messageCreate', async message => {
 });
 
 // Set up activities
-client.on('ready', () => {
+client.on('ready', async () => {
     displayFinalTable(client.user.tag);
+
+    // Load custom event handlers
+    await loadEventHandlers(client);
+    console.log("[INFO] Custom event handlers initialized");
 
     if (activities.length) {
         let currentActivityIndex = 0;

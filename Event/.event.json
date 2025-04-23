@@ -1,7 +1,7 @@
 {
-   "UbuconAsia2025": "",
-   "Web": "",
+   "UbuconAsia2025": "Your Logger Channel ID",
+   "Web": "20255.ubucon.asia/",
    "Special_key": "",
-  "Webhook": "https://example.com/webhook",
-  "Channel_id": ""
+  "Channel_id": "Your Guessing Channel ID",
+  "Mascot": "Your Mascot ID"
 }
