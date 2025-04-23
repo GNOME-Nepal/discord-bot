@@ -179,12 +179,11 @@ async function processLogBuffer() {
                     // If still too large, break it down further or truncate
                     const truncatedChunk = chunk.substring(0, 1950) + "\n... [content truncated]";
                     await webhook.send({
-                        content: '```\n' + truncatedChunk + '\n```',
-                        username: 'Bot Logger'
+                        content: '```yaml\n' + truncatedChunk + '\n```',
                     });
                 } else {
                     await webhook.send({
-                        content: '```\n' + chunk + '\n```',
+                        content: '```prolog\n' + chunk + '\n```',
                         username: 'Bot Logger'
                     });
                 }

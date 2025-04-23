@@ -5,7 +5,7 @@ const packageJson = require('../../package.json');
 
 module.exports = {
     name: 'ping',
-    description: 'Replies with bot\'s latency information.',
+    description: 'Replies with bot latency information.',
     syntax: '$sudo ping',
     usage: '$sudo ping',
     emoji: '🏓',
