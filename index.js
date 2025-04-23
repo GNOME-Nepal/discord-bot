@@ -406,3 +406,9 @@ client.on('ready', async () => {
         process.exit(1);
     }
 })();
+
+// Initialize the logger's global capture
+const logger = require('./Utils/bot/logger');
+logger.initGlobalCapture();
+logger.log('Discord logging system initialized');
+
