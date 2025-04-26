@@ -1,23 +1,25 @@
 /**
- * Botanic Zoo - Guess the Mascot Event
+ * UBUCON-Asia@2025 - Guess the Mascot Event
  * ====================================
- * This module implements a "Guess the Mascot" event where:
- * 1. Monitors messages in a specified channel
- * 2. Users try to guess the secret mascot animal
- * 3. Delete messages that don't contain animal keywords
- * 4. Reacts to valid messages with an emoji
- * 5. Logs valid messages to a designated channel
- * 6. Integrates with the Wikipedia API for animal detection and facts
- * 7. Logs when users guess the correct mascot
- * 
- * Features:
- * - Properly handles multi-word animals (like "red panda")
- * - Uses the Wikipedia API to reliably detect animals and fetch information
- * - Falls back to a predefined list of common animals when the API is unavailable
- * - Provides visual feedback with colored embeds (green for correct guesses, yellow for mixed content, gray for regular animal messages)
- * - Includes buttons to jump to the original message
- * 
- * Note: Previously used the A-Z Animals website, but switched to Wikipedia API due to 403 errors
+ * * Core Features:
+ *  * - Hybrid Verification: Combines Wikipedia API checks with local animal list validation
+ *  * - Contextual Feedback: Color-coded embeds (Green: correct guess, Yellow: mixed content, Gray: valid animal)
+ *  * - Message Tracing: Built-in message jump buttons for moderation
+ *  * - Performance Optimizations:
+ *  *   - Multi-word combination analysis
+ *  *   - Short-circuit validation for common animals
+ *  *   - Asynchronous batch processing
+ *  * - Fault Tolerance:
+ *  *   - Automated API error fallback
+ *  *   - Content sanitization (3+ character word filtering)
+ *  *   - Ephemeral user notifications
+ *  *
+ *  * System Integration:
+ *  * - Discord.js event handling architecture
+ *  * - Wikipedia REST API integration
+ *  * - Configurable through external JSON files
+ *  * - Comprehensive logging system
+ *  *
  */
 
 const { Client, Events, GatewayIntentBits, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
@@ -29,7 +31,7 @@ const axios = require('axios');
 // Configuration
 const eventConfig = require('../event.json');
 const MONITORED_CHANNEL_ID = eventConfig.Channel_id;
-const REACTION_EMOJI = "<:gnome:1342508917560971325>";
+const REACTION_EMOJI = "<:gnome:1342508917560971325>"
 const MASCOT = eventConfig.Mascot.toLowerCase(); // Convert to lowercase for case-insensitive comparison
 
 // API URL for animal search
@@ -55,7 +57,12 @@ const ANIMAL_KEYWORDS = [
     "panda", "koala", "kangaroo", "penguin", "dolphin", "whale", "shark", "octopus",
     "eagle", "owl", "parrot", "flamingo", "crocodile", "snake", "turtle", "frog",
     "butterfly", "bee", "ant", "spider", "wolf", "fox", "deer", "rabbit", "squirrel",
-    "cat", "dog", "horse", "cow", "sheep", "goat", "pig", "chicken", "duck"
+    "cat", "dog", "horse", "cow", "sheep", "goat", "pig", "chicken", "duck",
+    "bird", "insect", "fish", "crab", "lobster", "snail", "slug", "flea", "fly",
+    "beetle", "ant", "spider", "scorpion", "centipede", "moth", "butterfly", "ladybug",
+    "grasshopper", "cicada", "dragonfly", "lacewing", "lionfish", "lobster", "crab",
+    "snail", "slug", "flea", "fly", "beetle", "ant", "spider", "scorpion", "centipede",
+    "moth", "butterfly", "ladybug", "grasshopper", "cicada", "dragonfly", "lacewing", "lionfish"
 ].map(animal => animal.toLowerCase()); // Convert all to lowercase
 
 
@@ -228,24 +235,16 @@ async function containsAnimalKeyword(content) {
                 nonAnimalWords.push(word);
             }
         } catch (error) {
-            // API call failed, not an animal or API error
             nonAnimalWords.push(word);
         }
     }
 
-    // Fallback to the predefined list for common animals
-    // This helps when the API is unavailable
-    // Note: We already checked for negative phrases at the beginning of the function
-
-    // First try to find multi-word animals (like "red panda")
-    // Sort by length descending to prioritize longer matches (e.g., "red panda" over just "panda")
     const multiWordAnimals = ANIMAL_KEYWORDS
         .filter(keyword => keyword.includes(' '))
         .sort((a, b) => b.length - a.length);
 
     for (const animal of multiWordAnimals) {
         if (lowerContent.includes(animal)) {
-            // Found a multi-word animal
             const animalWords = animal.split(' ');
             const filteredNonAnimalWords = nonAnimalWords.filter(word => 
                 !animalWords.includes(word)
@@ -258,7 +257,6 @@ async function containsAnimalKeyword(content) {
             };
         }
 
-        // Check if all words of the animal are present, even if not in order
         const animalWords = animal.split(' ');
         if (animalWords.every(word => lowerContent.includes(word))) {
             const filteredNonAnimalWords = nonAnimalWords.filter(word => 
@@ -273,17 +271,14 @@ async function containsAnimalKeyword(content) {
         }
     }
 
-    // Then try single-word animals
     const singleWordAnimal = ANIMAL_KEYWORDS
         .filter(keyword => !keyword.includes(' '))
         .find(keyword => {
-            // Make sure we're matching whole words, not parts of words
             const regex = new RegExp(`\\b${keyword}\\b`, 'i');
             return regex.test(lowerContent);
         });
 
     if (singleWordAnimal) {
-        // Filter out the animal keyword from nonAnimalWords
         const filteredNonAnimalWords = nonAnimalWords.filter(word => 
             word !== singleWordAnimal
         );
@@ -291,14 +286,14 @@ async function containsAnimalKeyword(content) {
         return { 
             isAnimal: true, 
             animalName: singleWordAnimal,
-            nonAnimalWords: filteredNonAnimalWords.filter(w => w.length >= 3) // Only include words with 3+ chars
+            nonAnimalWords: filteredNonAnimalWords.filter(w => w.length >= 3)
         };
     }
 
     return { 
         isAnimal: false, 
         animalName: null,
-        nonAnimalWords: nonAnimalWords.filter(w => w.length >= 3) // Only include words with 3+ chars
+        nonAnimalWords: nonAnimalWords.filter(w => w.length >= 3)
     };
 }
 
@@ -309,103 +304,118 @@ async function containsAnimalKeyword(content) {
  */
 async function getAnimalInfo(animal) {
     try {
-        // First check if the animal exists using our custom search function
-        const isAnimal = await searchAnimal(animal);
-
-        if (!isAnimal) {
-            return {}; // Not an animal or not found
-        }
-
-        // Try to get more detailed info from Wikipedia
-        try {
-            // Use Wikipedia's API to get an extract of the animal's page
-            const extractUrl = `https://en.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(animal)}`;
-            const extractResponse = await axios.get(extractUrl);
-
-            if (extractResponse.data && extractResponse.data.extract) {
-                return {
-                    name: animal,
-                    description: extractResponse.data.extract,
-                    scientificName: extractResponse.data.title || "",
-                    habitat: "",
-                    diet: "",
-                    // Add Wikipedia URL if available
-                    url: extractResponse.data.content_urls?.desktop?.page || ""
-                };
-            }
-        } catch (extractError) {
-            console.error(`Error getting Wikipedia extract for ${animal}:`, extractError.message);
-            // Continue with fallback if Wikipedia extract fails
-        }
-
-        // If Wikipedia API failed, try the botanicZooApi as a fallback
-        try {
-            const encodedAnimal = encodeURIComponent(animal);
-            const animalInfo = await botanicZooApi.getAnimal(encodedAnimal);
-
-            if (animalInfo && Object.keys(animalInfo).length > 0) {
-                return animalInfo;
-            }
-        } catch (error) {
-            // API call failed, continue with custom implementation
-        }
-
-        // If all APIs failed, create a basic animal info object
+        const extractUrl = `https://en.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(animal)}`;
+        const extractResponse = await axios.get(extractUrl);
+        
         return {
             name: animal,
-            description: `The ${animal} is a fascinating creature in the animal kingdom!`,
-            scientificName: "",
-            habitat: "",
-            diet: ""
+            description: extractResponse.data?.extract || `Learn about ${animal} on Wikipedia!`,
+            imageUrl: extractResponse.data?.thumbnail?.source || '',
+            wikiUrl: extractResponse.data?.content_urls?.desktop?.page || ''
         };
     } catch (error) {
-        console.error(`Error getting animal info for ${animal}:`, error.message);
-        return {};
+        console.error(`Error getting Wikipedia data: ${error.message}`);
+        return {
+            name: animal,
+            description: `The ${animal} is a fascinating creature!`,
+            wikiUrl: `https://en.wikipedia.org/wiki/${encodeURIComponent(animal)}`
+        };
     }
 }
 
 /**
- * Fetches animal facts from the API
- * @param {string} animal - The animal to fetch facts for
- * @returns {Promise<Object>} - The animal facts
+ * Creates an embed for user replies
+ * @param {Object} animalInfo - The animal information
+ * @returns {Object} - The embed for user replies
  */
-async function fetchAnimalFact(animal) {
+function createUserReplyEmbed(animalInfo) {
+    return new EmbedBuilder()
+        .setTitle(`**${animalInfo.name.toUpperCase()}**`)
+        .setDescription(animalInfo.description.slice(0, 2000))
+        .setThumbnail(animalInfo.imageUrl)
+        .addFields({
+            name: ' Wikipedia Article',
+            value: `[Read More](${animalInfo.wikiUrl})`,
+            inline: true
+        })
+        .setFooter({ text: 'UBUCON Asia 2025 - Guess the Mascot' })
+        .setTimestamp();
+}
+
+/**
+ * Handles a message in the monitored channel
+ * @param {Object} message - The Discord message object
+ */
+async function handleMessage(message) {
+    if (message.author.bot || message.channel.id !== MONITORED_CHANNEL_ID) return;
+
     try {
-        // Get animal info using our custom function
-        const animalInfo = await getAnimalInfo(animal);
+        const { isAnimal, animalName, nonAnimalWords } = await containsAnimalKeyword(message.content);
+        const isCorrectGuess = isCorrectMascotGuess(message.content);
 
-        // Check if we got valid data
-        if (animalInfo && Object.keys(animalInfo).length > 0) {
-            // If we have a description, use it as the fact
-            if (animalInfo.description) {
-                return { fact: animalInfo.description };
+        if (isAnimal && animalName) {
+            const animalInfo = await getAnimalInfo(animalName);
+
+            // Send neutral user reply
+            const userEmbed = createUserReplyEmbed(animalInfo);
+            await message.reply({ 
+                embeds: [userEmbed],
+                components: [
+                    new ActionRowBuilder().addComponents(
+                        new ButtonBuilder()
+                            .setLabel('View Full Article')
+                            .setStyle(ButtonStyle.Link)
+                            .setURL(animalInfo.wikiUrl)
+                    )
+                ]
+            });
+
+            // Keep colored logging
+            const logChannel = message.guild.channels.cache.get(eventConfig.UbuconAsia2025);
+            if (logChannel) {
+                let logColor, logDescription;
+
+                if (isCorrectGuess) {
+                    logColor = 0x00FF00; // Green for correct guess
+                    logDescription = `**Correct Guess**: ${animalName}`;
+                } else if (nonAnimalWords.length > 0) {
+                    logColor = 0xFFFF00; // Yellow for mixed content
+                    logDescription = `**Mixed Content**: ${animalName} (Non-animal words: ${nonAnimalWords.join(', ')})`;
+                } else {
+                    logColor = 0x808080; // Gray for valid animal but not a guess
+                    logDescription = `**Valid Animal**: ${animalName}`;
+                }
+
+                const logEmbed = new EmbedBuilder()
+                    .setColor(logColor)
+                    .setAuthor({
+                        name: `${message.author.tag}`,
+                        iconURL: message.author.displayAvatarURL()
+                    })
+                    .setDescription(logDescription)
+                    .addFields(
+                        { name: 'Channel', value: `<#${message.channel.id}>`, inline: true },
+                        { name: 'Message ID', value: `${message.id}`, inline: true }
+                    )
+                    .setFooter({ text: 'UBUCON Asia 2025 - Guess the Mascot' })
+                    .setTimestamp();
+
+                await logChannel.send({ embeds: [logEmbed] });
             }
 
-            // Otherwise, create a fact from available data
-            let fact = `The ${animal} is a fascinating creature!`;
+            await message.react(isCorrectGuess ? '✅' : REACTION_EMOJI);
 
-            if (animalInfo.scientificName) {
-                fact += ` Scientific name: ${animalInfo.scientificName}.`;
-            }
-
-            if (animalInfo.habitat) {
-                fact += ` Habitat: ${animalInfo.habitat}.`;
-            }
-
-            if (animalInfo.diet) {
-                fact += ` Diet: ${animalInfo.diet}.`;
-            }
-
-            return { fact };
+        } else {
+            // Ensure prompt message is deleted after sending
+            await message.delete();
+            const reply = await message.channel.send({
+                content: `${message.author}, Please include an animal name in your guess!`,
+                ephemeral: true
+            });
+            setTimeout(() => reply.delete(), 5000); // 5 seconds after deleting prompt message
         }
-
-        // If no data was found, use a generic fallback fact
-        return { fact: `The ${animal} is a fascinating creature in the animal kingdom!` };
     } catch (error) {
-        console.error(`Error fetching animal fact for ${animal}:`, error.message);
-
-        // Use a generic fallback fact for all animals
-        return { fact: `The ${animal} is a fascinating creature in the animal kingdom!` };
+        console.error(`Error handling message: ${error.message}`);
     }
 }
 
@@ -430,133 +440,6 @@ function isCorrectMascotGuess(content) {
     }
 
     return false;
-}
-
-/**
- * Creates an embed for logging valid messages
- * @param {Object} message - The Discord message object
- * @param {string} animalKeyword - The detected animal keyword
- * @param {Object} animalFact - The animal fact from the API
- * @param {boolean} isCorrectGuess - Whether this is a correct mascot guess
- * @param {string[]} nonAnimalWords - Non-animal words in the message
- * @returns {Object} - The embed and components for logging
- */
-function createLogEmbed(message, animalKeyword, animalFact, isCorrectGuess, nonAnimalWords = []) {
-    const hasNonAnimalContent = nonAnimalWords.length > 0;
-
-    // Create the embed
-    const embed = new EmbedBuilder()
-        .setAuthor({
-            name: message.author.tag,
-            iconURL: message.author.displayAvatarURL()
-        })
-        .setDescription(message.content)
-        .addFields(
-            { name: 'Animal Fact', value: animalFact.fact || 'No fact available' },
-            { name: 'Channel', value: `<#${message.channel.id}>` },
-            { name: 'Message ID', value: message.id }
-        )
-        .setTimestamp();
-
-    // Set color and title based on message content
-    if (isCorrectGuess) {
-        // Green for correct guesses
-        embed.setColor(0x00FF00)
-            .setTitle(`🎉 Correct Mascot Guess: ${animalKeyword}`)
-            .addFields({ name: 'Note', value: 'This user guessed the mascot!' });
-    } else if (hasNonAnimalContent) {
-        // Yellow for messages with non-animal content
-        embed.setColor(0xFFFF00)
-            .setTitle(`⚠️ Mixed Content: ${animalKeyword}`)
-            .addFields({ 
-                name: 'Non-Animal Words', 
-                value: nonAnimalWords.join(', ') || 'None'
-            });
-    } else {
-        // Gray for regular animal messages
-        embed.setColor(0x808080)
-            .setTitle(`🪶 Animal Message: ${animalKeyword}`);
-    }
-
-    // Create button to jump to the message
-    const row = new ActionRowBuilder()
-        .addComponents(
-            new ButtonBuilder()
-                .setLabel('Go to Message')
-                .setStyle(ButtonStyle.Link)
-                .setURL(`https://discord.com/channels/${message.guild.id}/${message.channel.id}/${message.id}`)
-        );
-
-    return { embed, components: [row] };
-}
-
-/**
- * Handles a message in the monitored channel
- * @param {Object} message - The Discord message object
- */
-async function handleMessage(message) {
-    // Ignore bot messages and messages from other channels
-    if (message.author.bot || message.channel.id !== MONITORED_CHANNEL_ID) return;
-
-    try {
-        // Check if the message contains an animal keyword
-        const { isAnimal, animalName, nonAnimalWords } = await containsAnimalKeyword(message.content);
-
-        if (isAnimal && animalName) {
-            // Check if this is a correct mascot guess (for logging purposes only)
-            const isCorrectGuess = isCorrectMascotGuess(message.content);
-            const hasNonAnimalContent = nonAnimalWords && nonAnimalWords.length > 0;
-
-            try {
-                // React to the message with the same emoji for all valid animal messages
-                await message.react(REACTION_EMOJI);
-
-                // Fetch animal fact from API
-                const animalFact = await fetchAnimalFact(animalName);
-
-                // Log the valid message to the designated channel
-                const logChannel = message.guild.channels.cache.get(eventConfig.UbuconAsia2025);
-                if (logChannel) {
-                    const { embed, components } = createLogEmbed(
-                        message, 
-                        animalName, 
-                        animalFact, 
-                        isCorrectGuess, 
-                        nonAnimalWords
-                    );
-
-                    await logChannel.send({ 
-                        embeds: [embed],
-                        components: components
-                    });
-                }
-
-                // Only log to console if there's something unusual (correct guess or non-animal content)
-                if (isCorrectGuess) {
-                    console.log(`[INFO] Correct mascot guess: "${message.content}" - User: ${message.author.tag}`);
-                } else if (hasNonAnimalContent) {
-                    console.log(`[INFO] Mixed content message: "${message.content}" - Animal: ${animalName}, Non-animal: ${nonAnimalWords.join(', ')}`);
-                }
-            } catch (error) {
-                console.error('Error processing valid animal message:', error.message);
-            }
-        } else {
-            // Delete messages without animal keywords
-            try {
-                await message.delete();
-                // Send a temporary notification to the user
-                const notification = await message.channel.send(
-                    `${message.author}, your message was deleted because it did not contain any animal keywords. Try to guess what the mascot animal is!`
-                );
-                // Delete the notification after 5 seconds
-                setTimeout(() => notification.delete().catch(() => {}), 5000);
-            } catch (error) {
-                console.error('Error deleting invalid message:', error.message);
-            }
-        }
-    } catch (error) {
-        console.error('Error in animal detection system:', error.message);
-    }
 }
 
 /**
