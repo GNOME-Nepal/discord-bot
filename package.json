@@ -21,7 +21,8 @@
     "discord-api-types": "^0.37.119",
     "discord.js": "^14.18.0",
     "dotenv": "^16.4.7",
-    "node-fetch": "^3.3.2"
+    "node-fetch": "^3.3.2",
+    "prettier": "^3.5.3"
   },
   "devDependencies": {
     "nodemon": "^3.1.9"

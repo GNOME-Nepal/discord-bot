@@ -18,6 +18,7 @@ This document provides setup, testing, and feature addition instructions.
 </div>
 
 ### Prerequisites
+
 - Node.js (v16.6.0 or later recommended)
 - npm (comes with Node.js)
 - A Discord account with access to the [Discord Developer Portal](https://discord.com/developers/applications)
@@ -25,37 +26,42 @@ This document provides setup, testing, and feature addition instructions.
 ### Setting Up the Development Environment
 
 1. Clone the repository:
+
    ```bash
    git clone <repository-url>
    cd discord-bot
    ```
 
 2. Install dependencies:
+
    ```bash
    npm install
    ```
 
 3. Create a `config.json` file in the project root with your Discord credentials. You can simply rename the provided `.config.json` template file:
+
    ```bash
    cp .config.json config.json
    ```
 
    Then edit the `config.json` file with your actual credentials:
+
    ```json
    {
-    "CLIENT_ID": "your-client-id",
-    "TOKEN": "your-bot-token",
-    "GUILD_ID": "your-guild-id",
-    "MOD_ROLE_ID": "your-mod-role-id",
-    "REPORT_WEBHOOK_URL": "your-webhook-url",
-    "REPORT_LOG_CHANNEL_ID": "your-log-channel-id",
-    "MEMBER_ROLE_ID": "your-member-role-id",
-    "CONTRIBUTOR_ROLE_ID": "your-contributor-role-id",
-    "MAINTAINER_ROLE_ID": "your-maintainer-role-id"
+     "CLIENT_ID": "your-client-id",
+     "TOKEN": "your-bot-token",
+     "GUILD_ID": "your-guild-id",
+     "MOD_ROLE_ID": "your-mod-role-id",
+     "REPORT_WEBHOOK_URL": "your-webhook-url",
+     "REPORT_LOG_CHANNEL_ID": "your-log-channel-id",
+     "MEMBER_ROLE_ID": "your-member-role-id",
+     "CONTRIBUTOR_ROLE_ID": "your-contributor-role-id",
+     "MAINTAINER_ROLE_ID": "your-maintainer-role-id"
    }
    ```
 
 4. Validate your token configuration:
+
    ```bash
    npm run ttest
    ```
@@ -72,6 +78,7 @@ This document provides setup, testing, and feature addition instructions.
 The project uses Node.js's built-in `assert` module for testing. Tests are located in the `tests` directory.
 
 To run all tests:
+
 ```bash
 node tests/commandtest.js
 ```
@@ -92,29 +99,29 @@ const assert = require('assert');
 const commands = require('./commands');
 
 function testCommandDefinitions() {
-    // Test that all command categories exist
-    assert(commands.member, 'Member commands should exist');
-    assert(commands.contributor, 'Contributor commands should exist');
-    assert(commands.maintainer, 'Maintainer commands should exist');
-    assert(commands['slash-commands'], 'Slash commands should exist');
+  // Test that all command categories exist
+  assert(commands.member, 'Member commands should exist');
+  assert(commands.contributor, 'Contributor commands should exist');
+  assert(commands.maintainer, 'Maintainer commands should exist');
+  assert(commands['slash-commands'], 'Slash commands should exist');
 
-    // Test that each command has the required properties
-    const allCommands = [
-        ...commands.member,
-        ...commands.contributor,
-        ...commands.maintainer,
-        ...commands['slash-commands']
-    ];
+  // Test that each command has the required properties
+  const allCommands = [
+    ...commands.member,
+    ...commands.contributor,
+    ...commands.maintainer,
+    ...commands['slash-commands'],
+  ];
 
-    allCommands.forEach(cmd => {
-        assert(cmd.name, `Command should have a name: ${JSON.stringify(cmd)}`);
-        assert(cmd.description, `Command ${cmd.name} should have a description`);
-        assert(cmd.syntax, `Command ${cmd.name} should have syntax`);
-        assert(cmd.usage, `Command ${cmd.name} should have usage example`);
-        assert(cmd.emoji, `Command ${cmd.name} should have an emoji`);
-    });
+  allCommands.forEach((cmd) => {
+    assert(cmd.name, `Command should have a name: ${JSON.stringify(cmd)}`);
+    assert(cmd.description, `Command ${cmd.name} should have a description`);
+    assert(cmd.syntax, `Command ${cmd.name} should have syntax`);
+    assert(cmd.usage, `Command ${cmd.name} should have usage example`);
+    assert(cmd.emoji, `Command ${cmd.name} should have an emoji`);
+  });
 
-    console.log('✓ All command definitions are valid');
+  console.log('✓ All command definitions are valid');
 }
 
 // Run the test
@@ -148,12 +155,12 @@ Slash commands should be structured as follows:
 const { SlashCommandBuilder } = require('@discordjs/builders');
 
 module.exports = {
-    data: new SlashCommandBuilder()
-        .setName('command-name')
-        .setDescription('Command description'),
-    async execute(interaction) {
-        // Command implementation
-    },
+  data: new SlashCommandBuilder()
+    .setName('command-name')
+    .setDescription('Command description'),
+  async execute(interaction) {
+    // Command implementation
+  },
 };
 ```
 
@@ -163,17 +170,18 @@ Prefix / Role-based commands should be structured as follows:
 
 ```javascript
 module.exports = {
-    name: 'command-name',
-    description: 'Command description',
-    async execute(message, args) {
-        // Command implementation
-    },
+  name: 'command-name',
+  description: 'Command description',
+  async execute(message, args) {
+    // Command implementation
+  },
 };
 ```
 
 ### Adding New Commands
 
 1. Create a new file in the appropriate directory:
+
    - Slash commands: `Src/Slash-Commands/`
    - Member commands: `Src/Member/`
    - Contributor commands: `Src/Contributor/`

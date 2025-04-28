@@ -7,8 +7,12 @@ async function testCommandLoader() {
     console.log('Command loading successful!');
     console.log(`Loaded ${commands.slashCommands.size} slash commands`);
     console.log(`Loaded ${commands.memberCommands.size} member commands`);
-    console.log(`Loaded ${commands.contributorCommands.size} contributor commands`);
-    console.log(`Loaded ${commands.maintainerCommands.size} maintainer commands`);
+    console.log(
+      `Loaded ${commands.contributorCommands.size} contributor commands`,
+    );
+    console.log(
+      `Loaded ${commands.maintainerCommands.size} maintainer commands`,
+    );
   } catch (error) {
     console.error('Error loading commands:', error);
   }

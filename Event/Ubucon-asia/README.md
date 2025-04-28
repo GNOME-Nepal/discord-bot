@@ -10,20 +10,24 @@ This module implements a "Guess the Mascot" event for Discord servers, where use
 - **Smart Logging**: Color-coded embeds with message context links
 - **Error Resilience**: Automatic fallback to local animal list when APIs are unavailable
 - **User Feedback**: Temporary notifications for deleted messages
+
 ## Setup
 
 1. Install the required package:
+
    ```
    npm install botanic-zoo-api
    ```
 
 2. Configure the event by editing the `Event/event.json` file:
+
    ```json
    {
      "UbuconAsia2025": "YOUR_LOGGING_CHANNEL_ID",
      "Channel_id": "YOUR_MONITORED_CHANNEL_ID"
    }
    ```
+
    - `UbuconAsia2025`: The channel ID where valid messages will be logged
    - `Channel_id`: The channel ID that will be monitored for mascot guesses
 
@@ -40,6 +44,7 @@ This module implements a "Guess the Mascot" event for Discord servers, where use
 ## Animal Keywords
 
 The system recognizes many animal keywords, including:
+
 - Common animals: lion, tiger, bear, elephant, etc.
 - Pets: cat, dog, bird, fish, etc.
 - Many other animals from the animal kingdom
@@ -47,6 +52,7 @@ The system recognizes many animal keywords, including:
 ## Customization
 
 You can customize the event by editing the `Event/Ubucon-asia/Guess.js` file:
+
 - `REACTION_EMOJI`: The emoji used for valid animal messages
 - `MASCOT`: The secret mascot that users need to guess
 - `ANIMAL_KEYWORDS`: The list of valid animal keywords

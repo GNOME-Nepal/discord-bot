@@ -10,22 +10,27 @@
  * @param {Collection} slashCommands - Collection of slash commands
  */
 async function handleInteraction(interaction, slashCommands) {
-    if (!interaction.isCommand()) return;
+  if (!interaction.isCommand()) return;
 
-    const command = slashCommands.get(interaction.commandName);
-    if (!command) return;
+  const command = slashCommands.get(interaction.commandName);
+  if (!command) return;
 
-    try {
-        await command.execute(interaction);
-    } catch (error) {
-        console.error(`[ERROR] Slash command /${interaction.commandName}: ${error.message}`);
-        const replyContent = {content: 'There was an error while executing this command!', flags: 64};
-        if (interaction.deferred || interaction.replied) {
-            await interaction.followUp(replyContent).catch(() => {});
-        } else {
-            await interaction.reply(replyContent).catch(() => {});
-        }
+  try {
+    await command.execute(interaction);
+  } catch (error) {
+    console.error(
+      `[ERROR] Slash command /${interaction.commandName}: ${error.message}`,
+    );
+    const replyContent = {
+      content: 'There was an error while executing this command!',
+      flags: 64,
+    };
+    if (interaction.deferred || interaction.replied) {
+      await interaction.followUp(replyContent).catch(() => {});
+    } else {
+      await interaction.reply(replyContent).catch(() => {});
     }
+  }
 }
 
 module.exports = { handleInteraction };

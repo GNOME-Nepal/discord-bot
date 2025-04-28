@@ -11,10 +11,10 @@
 
 A Discord bot specifically designed for the GNOME Nepal community server, featuring role-based commands and community engagement tools.
 
-
 ## Overview
 
 This Discord bot is built using:
+
 - [Node.js](https://nodejs.org/) (v16.6.0 or later)
 - [discord.js](https://discord.js.org/) library
 - Role-based command system
@@ -22,6 +22,7 @@ This Discord bot is built using:
 ## Quick Start
 
 1. Clone and install dependencies:
+
    ```bash
    git clone https://github.com/GNOME-Nepal/discord-bot.git
    cd discord-bot
@@ -29,6 +30,7 @@ This Discord bot is built using:
    ```
 
 2. Create a `config.json` file with your Discord credentials. You can simply rename the provided `.config.json` template file:
+
    ```bash
    cp .config.json config.json
    ```
@@ -46,6 +48,7 @@ This Discord bot is built using:
 The bot supports two types of commands:
 
 1. **Slash Commands**: Available to all users (use `/help` to see the list)
+
    - Examples: `/report`, `/about`, `/contributors`, `/meme`, `/social`
 
 2. **Role-based Commands**: Access depends on user roles
@@ -66,6 +69,7 @@ The bot supports two types of commands:
 ## Testing
 
 Run tests with:
+
 ```bash
 node tests/commandtest.js
 ```

@@ -6,8 +6,8 @@
  */
 
 module.exports = {
-    website: 'https://nepal.gnome.org/',
-    facebook: 'https://m.facebook.com/61560797123131/',
-    instagram: 'https://www.instagram.com/gnomenepal/',
-    linkedin: 'https://www.linkedin.com/company/gnomenepal/posts/?feedView=all'
+  website: 'https://nepal.gnome.org/',
+  facebook: 'https://m.facebook.com/61560797123131/',
+  instagram: 'https://www.instagram.com/gnomenepal/',
+  linkedin: 'https://www.linkedin.com/company/gnomenepal/posts/?feedView=all',
 };

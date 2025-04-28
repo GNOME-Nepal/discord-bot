@@ -3,7 +3,6 @@ const botanicZooApi = require('botanic-zoo-api');
 async function testBotanicZooApi() {
   console.log('Testing Botanic Zoo API...');
 
-  // Try the getAnimal method with 'red panda' (URL encoded)
   console.log('Trying getAnimal method with "red panda"...');
   try {
     const encodedAnimal = encodeURIComponent('red panda');
@@ -12,10 +11,11 @@ async function testBotanicZooApi() {
   } catch (error) {
     console.error('Error using getAnimal method:', error.message);
     console.log('Red Panda Info: {}');
-    console.log('Using fallback fact: "The red panda is a fascinating creature in the animal kingdom!"');
+    console.log(
+      'Using fallback fact: "The red panda is a fascinating creature in the animal kingdom!"',
+    );
   }
 
-  // Try getAnimalOfTheDay method
   console.log('\nTrying getAnimalOfTheDay method...');
   try {
     const animalOfTheDay = await botanicZooApi.getAnimalOfTheDay();
@@ -23,11 +23,12 @@ async function testBotanicZooApi() {
   } catch (error) {
     console.error('Error using getAnimalOfTheDay method:', error.message);
     console.log('Animal of the Day: {}');
-    console.log('Using fallback animal of the day: "Today\'s featured animal is the lion, king of the jungle!"');
+    console.log(
+      'Using fallback animal of the day: "Today\'s featured animal is the lion, king of the jungle!"',
+    );
   }
 
   console.log('\nAPI testing completed!');
 }
 
-// Run the test function
 testBotanicZooApi();
