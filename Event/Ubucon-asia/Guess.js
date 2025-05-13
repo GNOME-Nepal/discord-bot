@@ -25,15 +25,11 @@
 const {
   Client,
   Events,
-  GatewayIntentBits,
   EmbedBuilder,
   ActionRowBuilder,
   ButtonBuilder,
   ButtonStyle,
 } = require('discord.js');
-const botanicZooApi = require('botanic-zoo-api');
-const fs = require('fs');
-const path = require('path');
 const axios = require('axios');
 
 const eventConfig = require('../event.json');
