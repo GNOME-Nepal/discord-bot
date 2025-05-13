@@ -53,6 +53,7 @@ The system recognizes many animal keywords, including:
 
 You can customize the event by editing the `Event/Ubucon-asia/Guess.js` file:
 
-- `REACTION_EMOJI`: The emoji used for valid animal messages
+- `INCORRECT_GUESS_EMOJI`: The emoji used for valid animal messages that are not the correct mascot
+- `CORRECT_GUESS_EMOJI`: The emoji used when a user correctly guesses the mascot
 - `MASCOT`: The secret mascot that users need to guess
 - `ANIMAL_KEYWORDS`: The list of valid animal keywords

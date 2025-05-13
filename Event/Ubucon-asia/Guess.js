@@ -25,20 +25,17 @@
 const {
   Client,
   Events,
-  GatewayIntentBits,
   EmbedBuilder,
   ActionRowBuilder,
   ButtonBuilder,
   ButtonStyle,
 } = require('discord.js');
-const botanicZooApi = require('botanic-zoo-api');
-const fs = require('fs');
-const path = require('path');
 const axios = require('axios');
 
 const eventConfig = require('../event.json');
 const MONITORED_CHANNEL_ID = eventConfig.Channel_id;
-const REACTION_EMOJI = '<:gnome:1342508917560971325>';
+const INCORRECT_GUESS_EMOJI = '<:gnome:1342508917560971325>';
+const CORRECT_GUESS_EMOJI = '<:gnome:1342508917560971325>';
 const MASCOT = eventConfig.Mascot.toLowerCase();
 
 // API URL for animal search
@@ -238,6 +235,7 @@ async function searchAnimal(searchTerm) {
         'zoology',
         'wildlife',
         'fauna',
+        'anime',
       ];
 
       // Check the top 3 results (or fewer if there are less than 3)
@@ -547,7 +545,7 @@ async function handleMessage(message) {
         await logChannel.send({ embeds: [logEmbed] });
       }
 
-      await message.react(isCorrectGuess ? '✅' : REACTION_EMOJI);
+      await message.react(isCorrectGuess ? CORRECT_GUESS_EMOJI : INCORRECT_GUESS_EMOJI);
     } else {
       await message.delete();
       const reply = await message.channel.send({
