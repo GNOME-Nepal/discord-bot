@@ -464,9 +464,9 @@ client.once('ready', async () => {
   try {
     console.log('[INFO] Connecting to Discord...');
     await client.login(TOKEN);
-    console.log('[OK] Bot successfully connected to Discord');
+    console.log('[SUCCESS] Bot successfully connected to Discord');
   } catch (error) {
-    console.error('CRITICAL: Failed to connect to Discord:', error);
+    console.error('[CRITICAL]: Failed to connect to Discord:', error);
     process.exit(1);
   }
 })();

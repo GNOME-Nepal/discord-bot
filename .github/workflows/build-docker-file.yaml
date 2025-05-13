@@ -47,12 +47,14 @@ jobs:
             -t ghcr.io/$REPOSITORY_LC/gnome-nepal-discord-bot:$SHORT_SHA \
             --push .
 
-          echo "::set-output name=short_sha::$SHORT_SHA"  # Set the short SHA as an output
 
   redeploy_on_caprover:
-    needs: setup-build-push  # Ensures redeployment happens after the build and push
+    needs: setup-build-push
     runs-on: ubuntu-latest
-
+  
+    env:
+      REPOSITORY_LC: gnome-nepal  # your GitHub org/user lowercase
+  
     steps:
       - name: Deploy Image to CapRover
         uses: caprover/deploy-from-github@v1.1.2
@@ -60,4 +62,4 @@ jobs:
           server: "${{ secrets.CAPROVER_SERVER }}"
           app: "${{ secrets.APP_NAME }}"
           token: "${{ secrets.CAPROVER_API_KEY }}"
-          image: "ghcr.io/$REPOSITORY_LC/gnome-nepal-discord-bot:${{ needs.setup-build-push.outputs.short_sha }}"
+          image: "ghcr.io/${{ env.REPOSITORY_LC }}/gnome-nepal-discord-bot:latest"
